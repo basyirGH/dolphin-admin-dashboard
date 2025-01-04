@@ -26,7 +26,7 @@ const Login = () => {
             const token = responseBody.token;
             if (token) {
                 login(token);
-                navigate("/");
+                navigate("/");   
             }
         } catch (err) {
         }
@@ -46,10 +46,6 @@ const Login = () => {
             [name]: value
         }));
     }
-
-    useEffect(() => {
-        console.log(JSON.stringify(formData, null, 2))
-    }, [formData])
 
     return (
         <ColorModeContext.Provider value={colorMode}>
