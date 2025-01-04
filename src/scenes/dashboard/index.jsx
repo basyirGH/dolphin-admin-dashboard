@@ -12,16 +12,40 @@ import GeographyChart from "../../components/GeographyChart";
 import BarChart from "../../components/BarChart";
 import StatBox from "../../components/StatBox";
 import ProgressCircle from "../../components/ProgressCircle";
+import { useAuth } from "../../utils/AuthContext";
+import socketIO from "socket.io-client";
 
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  // Use WebSocket transport - disable polling. 
+  // polling is default transport mechanism for compatibility with 
+  // environments that do not fully support WebSocket. When polling is used, 
+  // Socket.IO sends multiple HTTP requests (like GET, POST, and OPTIONS) 
+  // during the connection lifecycle, especially for establishing the handshake before upgrading to a WebSocket connection
+  const { token } = useAuth();
+  document.cookie = `Authorization=${token}; path=/;`;
+  const socket = socketIO.connect('localhost:8081', {
+    extraHeaders: {
+      "Authorization": token
+    },
+    transports: ['websocket']
+  });
+  socket.on("connect", () => {
+    console.log("Connected to the server");
+  });
+
+  // Listen for the "newOrder" event
+  socket.on("newOrder", (data) => {
+    console.log("Latest order count:", data);
+  });
+
   return (
     <Box m="20px">
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Header title="DASHBOARD" subtitle="Welcome to your dashboard" />
+        <Header title="Live Updates" subtitle="Welcome to your dashboard" />
 
         <Box>
           <Button
