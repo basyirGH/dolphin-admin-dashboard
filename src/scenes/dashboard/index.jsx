@@ -12,34 +12,49 @@ import GeographyChart from "../../components/GeographyChart";
 import BarChart from "../../components/BarChart";
 import StatBox from "../../components/StatBox";
 import ProgressCircle from "../../components/ProgressCircle";
-import { useAuth } from "../../utils/AuthContext";
-import socketIO from "socket.io-client";
+import useSocket from "../../utils/useSocket";
+import { useState, useEffect } from "react";
 
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const socket = useSocket();
+  const [dashboard, setDashboard] = useState();
 
-  // Use WebSocket transport - disable polling. 
-  // polling is default transport mechanism for compatibility with 
-  // environments that do not fully support WebSocket. When polling is used, 
-  // Socket.IO sends multiple HTTP requests (like GET, POST, and OPTIONS) 
-  // during the connection lifecycle, especially for establishing the handshake before upgrading to a WebSocket connection
-  const { token } = useAuth();
-  document.cookie = `Authorization=${token}; path=/;`;
-  const socket = socketIO.connect('localhost:8081', {
-    extraHeaders: {
-      "Authorization": token
-    },
-    transports: ['websocket']
-  });
-  socket.on("connect", () => {
-    console.log("Connected to the server");
-  });
+  // Initialize - get latest dashboard stats
+  // React re-renders the component whenever state changes, 
+  // including the setStatItems update, causing infinite loop
+  useEffect(() => {
+    if (!socket) return;
 
-  // Listen for the "newOrder" event
-  socket.on("newOrder", (data) => {
-    console.log("Latest order count:", data);
-  });
+    // Initialize dashboard when socket is connected
+    socket.emit("initDashboard", {}, (ackResponse) => {
+      console.log("Acknowledgment from server:", JSON.stringify(ackResponse, null, 2));
+      //setDashboard(ackResponse); // Update state with acknowledgment response
+    });
+
+    // Listen for 'newOrder' event and update the dashboard state
+    const handleNewOrder = (statUpdate) => {
+      console.log("Latest order count:", JSON.stringify(statUpdate, null, 2));
+      // setDashboard((prevDashboard) => {
+      //   const statItemsUpdated = prevDashboard.statItems.map((stat) =>
+      //     stat.title === "Total Revenue" ? {...stat, content: statUpdate.content} : stat
+      //   );
+      //   return {
+      //     ...prevDashboard,
+      //     statItems: statItemsUpdated
+      //   };
+      // });
+    };
+
+    socket.on("TOTAL_ORDERS_UPDATE", handleNewOrder);
+
+    // Cleanup on unmount
+    return () => {
+      socket.off("initDashboard");
+      socket.off("newOrder", handleNewOrder);
+    };
+  }, [socket]); 
 
   return (
     <Box m="20px">
