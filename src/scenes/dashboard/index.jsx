@@ -1,318 +1,305 @@
-import { Box, Button, IconButton, Typography, useTheme } from "@mui/material";
+
+import { Box, Button, ButtonGroup, Typography, useTheme } from "@mui/material";
+import { useEffect, useState } from "react";
+import { ICONS, METRIC_TYPES, SINGLE_AMOUNT_METRIC_CODES, SMALL_WINDOW_TRENDS, SOCKET_EVENTS, TIMEFRAMES } from "../../constants";
 import { tokens } from "../../theme";
-import { mockTransactions } from "../../data/mockData";
-import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
-import EmailIcon from "@mui/icons-material/Email";
-import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
-import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import TrafficIcon from "@mui/icons-material/Traffic";
+import { apiRequestUtility } from "../../utils/apiRequestUtility";
+import { useAuth } from "../../utils/AuthContext";
+import DemographyPieChart from "../../components/DemographyPieChart";
 import Header from "../../components/Header";
-import LineChart from "../../components/LineChart";
-import GeographyChart from "../../components/GeographyChart";
-import BarChart from "../../components/BarChart";
+import RealTimeMetricChart from "../../components/RealTimeMetricChart";
 import StatBox from "../../components/StatBox";
-import ProgressCircle from "../../components/ProgressCircle";
+
 import useSocket from "../../utils/useSocket";
-import { useState, useEffect } from "react";
 
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const socket = useSocket();
-  const [dashboard, setDashboard] = useState();
+  const { login, isAuthenticated } = useAuth();
+  const [singleAmounts, setSingleAmounts] = useState([]);
+  const [selectedTimeframeKey, setSelectedTimeframeKey] = useState();
+  const [selectedTimeframeValue, setSelectedTimeframeValue] = useState();
+  const [timeframeMessage, setTimeframeMessage] = useState();
+  const [timeframeChanged, setTimeframeChanged] = useState(false);
+  const [currentTimeframeMessage, setCurrentTimeframeMessage] = useState();
+  const timeframeChangeAnimDuration = 500;
 
-  // Initialize - get latest dashboard stats
-  // React re-renders the component whenever state changes, 
-  // including the setStatItems update, causing infinite loop
+  // Log in internally and keep token in memory
+  initAuth();
+
+  async function initAuth() { isAuthenticated ? initSingleAmounts() : await tryLogin(); }
+
+  async function tryLogin() {
+    try {
+      const responseBody = await apiRequestUtility(null, '/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: "1",
+          password: "1"
+        }),
+      });
+      const token = responseBody.token;
+      if (token) {
+        console.log("auth ok");
+        login(token);
+        initSingleAmounts();
+      }
+    } catch (err) { }
+  }
+
+  function initSingleAmounts() {
+    if (singleAmounts.length > 0) return;
+    setSingleAmounts([{ code: METRIC_TYPES.SINGLE_AMOUNT, metrics: [] }]);
+  }
+
+  /*
+  Initialize dashboard with latest stats.
+  React re-renders the component whenever state changes, 
+  including the socket.on updates, causing infinite loop. So wrap it in useeffect hook.
+  Initialize dashboard when socket is connected.
+  The data/update that comes from the server is 
+  implicitly passed to the callback function, handleMetricEvent.
+  Cleanup on unmount
+  */
   useEffect(() => {
     if (!socket) return;
-
-    // Initialize dashboard when socket is connected
-    socket.emit("initDashboard", {}, (ackResponse) => {
-      console.log("Acknowledgment from server:", JSON.stringify(ackResponse, null, 2));
-      //setDashboard(ackResponse); // Update state with acknowledgment response
+    socket.emit(SOCKET_EVENTS.INIT_SINGLE_AMOUNTS, {}, () => {
+      // console.log("Ack from server:", JSON.stringify(ackResponse, null, 2));
     });
+    const handleMetricEvent = (metricCode) => (metricUpdate) => {
+      const updatedType = metricUpdate.type;
+      setSingleAmounts((prev) =>
+        prev.map((type) => {
+          if (type.code !== updatedType) {
+            // If this is not the matching type, return it unchanged
+            return type;
+          }
 
-    // Listen for 'newOrder' event and update the dashboard state
-    const handleNewOrder = (statUpdate) => {
-      console.log("Latest order count:", JSON.stringify(statUpdate, null, 2));
-      // setDashboard((prevDashboard) => {
-      //   const statItemsUpdated = prevDashboard.statItems.map((stat) =>
-      //     stat.title === "Total Revenue" ? {...stat, content: statUpdate.content} : stat
-      //   );
-      //   return {
-      //     ...prevDashboard,
-      //     statItems: statItemsUpdated
-      //   };
-      // });
+          // Find if the metricCode already exists in the metrics array
+          const existingMetricIndex = type.metrics.findIndex(
+            (metric) => metric.code === metricCode
+          );
+
+          let updatedMetrics;
+          if (existingMetricIndex !== -1) {
+            // Replace the existing metric
+            updatedMetrics = type.metrics.map((metric, index) =>
+              index === existingMetricIndex
+                ? { code: metricCode, ...metricUpdate } // Replace metric
+                : metric // Keep other metrics unchanged
+            );
+          } else {
+            // Append the new metric
+            updatedMetrics = [...type.metrics, { code: metricCode, ...metricUpdate }];
+          }
+
+          // Return the updated type with the new metrics array
+          return {
+            ...type,
+            metrics: updatedMetrics,
+          };
+        })
+      );
     };
-
-    socket.on("TOTAL_ORDERS_UPDATE", handleNewOrder);
-
-    // Cleanup on unmount
+    Object.values(SINGLE_AMOUNT_METRIC_CODES).forEach((code) => {
+      socket.on(code, handleMetricEvent(code));
+    });
     return () => {
-      socket.off("initDashboard");
-      socket.off("newOrder", handleNewOrder);
+      Object.values(SINGLE_AMOUNT_METRIC_CODES).forEach((code) => {
+        socket.off(code);
+      });
+      socket.off(SOCKET_EVENTS.INIT_SINGLE_AMOUNT);
     };
-  }, [socket]); 
+  }, [socket]);
+
+  const handleTimeframeChange = (timeframeKey, timeframeValue) => {
+    setSelectedTimeframeKey(timeframeKey);
+    setSelectedTimeframeValue(timeframeValue);
+    setTimeframeChanged(true);
+
+    setTimeout(() => {
+      setTimeframeChanged(false);
+    }, timeframeChangeAnimDuration);
+  }
+
+  // Initialize selected timeframe when singleAmounts initialize
+  useEffect(() => {
+    if (!selectedTimeframeKey && !selectedTimeframeKey && !currentTimeframeMessage) {
+      setSelectedTimeframeKey(singleAmounts[0]?.metrics[0]?.aggregatedData[1]?.timeframe || null);
+      setCurrentTimeframeMessage(singleAmounts[0]?.metrics[0]?.aggregatedData[1]?.message || null);
+      setSelectedTimeframeValue(TIMEFRAMES[singleAmounts[0]?.metrics[0]?.aggregatedData[1]?.timeframe || null]);
+    }
+  }, [singleAmounts])
+
+  // change msg every time timeframe changes
+  useEffect(() => {
+    singleAmounts[0]?.metrics[0]?.aggregatedData.find(data =>
+      data.timeframe === selectedTimeframeKey ?
+        setTimeframeMessage(data.message) : null
+    )
+  }, [selectedTimeframeKey])
+
+  const timeframeSelectShadow = "0px -5px 0px 0px rgb(0, 136, 255)";
 
   return (
-    <Box m="20px">
+    <Box m="10px 20px 20px 20px">
       {/* HEADER */}
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Header title="Live Updates" subtitle="Welcome to your dashboard" />
-
-        <Box>
-          <Button
-            sx={{
-              backgroundColor: colors.blueAccent[700],
-              color: colors.grey[100],
-              fontSize: "14px",
-              fontWeight: "bold",
-              padding: "10px 20px",
-            }}
-          >
-            <DownloadOutlinedIcon sx={{ mr: "10px" }} />
-            Download Reports
-          </Button>
-        </Box>
+      <Box mb="20px">
+        <Header title="Dashboard" subtitle={null} />
+        {/* <Box display="flex"> */}
+        <ButtonGroup size="regular" aria-label="Basic button group">
+          {Object.entries(TIMEFRAMES).map(([key, value]) => {
+            return <Button color="info" variant={selectedTimeframeKey === key ? "contained" : "outlined"} key={key} onClick={() => {
+              handleTimeframeChange(key, value)
+            }}>{value}</Button>
+          })}
+        </ButtonGroup>
+        {/* </Box> */}
       </Box>
 
       {/* GRID & CHARTS */}
       <Box
-        display="grid"
-        gridTemplateColumns="repeat(12, 1fr)"
-        gridAutoRows="140px"
-        gap="20px"
+        mt="15px"
+        gridAutoRows="100px"
       >
+        <Typography mb="5px" variant="h5" >Showing amounts accumulated since {timeframeMessage || " ..."}</Typography>
         {/* ROW 1 */}
         <Box
-          gridColumn="span 3"
-          backgroundColor={colors.primary[400]}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
+          display="grid"
+          gridTemplateColumns={{
+            xs: "repeat(6, 1fr)",
+            sm: "repeat(12, 1fr)",
+            md: "repeat(12, 1fr)",
+            lg: "repeat(12, 1fr)",
+          }}
+          //gridTemplateColumns="repeat(6, 1fr)"
+          gridAutoRows="130px"
+          gap="5px"
         >
-          <StatBox
-            title="12,361"
-            subtitle="Emails Sent"
-            progress="0.75"
-            increase="+14%"
-            icon={
-              <EmailIcon
-                sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
-              />
+          {singleAmounts.map((type) => {
+            if (type.code === METRIC_TYPES.SINGLE_AMOUNT) {
+              return type.metrics.map((metric) => {
+                const IconComponent = ICONS[metric.code];
+                return (
+                  <Box
+                    key={metric.code}
+                    gridColumn="span 3"
+                    gridRow="span 1"
+                    backgroundColor={colors.primary[400]}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    //onClick={() => handleSelectedMetricChange(metric.code)}
+                    sx={{
+                      // cursor: "pointer",
+                      transition: `box-shadow ${timeframeChangeAnimDuration / 1000}s ease-in-out`,
+                      // "&:hover": {
+                      //   backgroundColor: colors.primary[800], // Glow effect on hover
+                      // },
+                      boxShadow:
+                        timeframeChanged ?
+                          timeframeSelectShadow
+                          : null
+                    }}
+                  >
+                    <StatBox
+                      // In JS, 0 is falsy
+                      // Unlike ||, which treats 0 as falsy and would replace it, ?? keeps 0 but replaces undefined or null.
+                      amount={metric.aggregatedData.find(item => item.timeframe === selectedTimeframeKey)?.amount ?? undefined}
+                      label={metric.label}
+                      prefix={metric.prefix}
+                      progress={metric.aggregatedData.find(item => item.timeframe === selectedTimeframeKey)?.rateOfChange ?? undefined}
+                      increase="+14%"
+                      icon={IconComponent ?
+                        <IconComponent
+                          sx={{
+                            color: colors.greenAccent[400],
+                            fontSize: "30px"
+                          }}
+                        />
+                        : null
+                      }
+                    />
+                  </Box>
+                )
+              });
             }
-          />
+            return null // fallback, in case no matching metric code found
+          }
+          )}
         </Box>
-        <Box
-          gridColumn="span 3"
-          backgroundColor={colors.primary[400]}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <StatBox
-            title="431,225"
-            subtitle="Sales Obtained"
-            progress="0.50"
-            increase="+21%"
-            icon={
-              <PointOfSaleIcon
-                sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
-              />
-            }
-          />
-        </Box>
-        <Box
-          gridColumn="span 3"
-          backgroundColor={colors.primary[400]}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <StatBox
-            title="32,441"
-            subtitle="New Clients"
-            progress="0.30"
-            increase="+5%"
-            icon={
-              <PersonAddIcon
-                sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
-              />
-            }
-          />
-        </Box>
-        <Box
-          gridColumn="span 3"
-          backgroundColor={colors.primary[400]}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <StatBox
-            title="1,325,134"
-            subtitle="Traffic Received"
-            progress="0.80"
-            increase="+43%"
-            icon={
-              <TrafficIcon
-                sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
-              />
-            }
-          />
-        </Box>
-
         {/* ROW 2 */}
         <Box
-          gridColumn="span 8"
-          gridRow="span 2"
-          backgroundColor={colors.primary[400]}
+          display="grid"
+          gridTemplateColumns={{
+            xs: "repeat(3, 1fr)",
+            sm: "repeat(3, 1fr)",
+            md: "repeat(12, 1fr)",
+            lg: "repeat(12, 1fr)",
+          }}
+          // gridAutoRows="100px"
+          gap="5px"
+          mt="5px"
         >
           <Box
-            mt="25px"
-            p="0 30px"
-            display="flex "
-            justifyContent="space-between"
-            alignItems="center"
+            gridColumn={{
+              xs: "span 3",  // Takes full width on small screens
+              sm: "span 3",
+              md: "span 3",
+              lg: "span 3",
+            }}
+            sx={{
+              // cursor: "pointer",
+              transition: `box-shadow ${timeframeChangeAnimDuration / 1000}s ease-in-out`,
+              // "&:hover": {
+              //   backgroundColor: colors.primary[800], // Glow effect on hover
+              // },
+              boxShadow:
+                timeframeChanged ?
+                  timeframeSelectShadow
+                  : null
+            }}
+            gridRow="span 4"
+            backgroundColor={colors.primary[400]}
           >
-            <Box>
-              <Typography
-                variant="h5"
-                fontWeight="600"
-                color={colors.grey[100]}
-              >
-                Revenue Generated
-              </Typography>
-              <Typography
-                variant="h3"
-                fontWeight="bold"
-                color={colors.greenAccent[500]}
-              >
-                $59,342.32
-              </Typography>
-            </Box>
-            <Box>
-              <IconButton>
-                <DownloadOutlinedIcon
-                  sx={{ fontSize: "26px", color: colors.greenAccent[500] }}
-                />
-              </IconButton>
-            </Box>
+            {socket && <DemographyPieChart socket={socket} selectedTimeframeKey={selectedTimeframeKey} selectedTimeframeValue={selectedTimeframeValue} />}
           </Box>
-          <Box height="250px" m="-20px 0 0 0">
-            <LineChart isDashboard={true} />
-          </Box>
-        </Box>
-        <Box
-          gridColumn="span 4"
-          gridRow="span 2"
-          backgroundColor={colors.primary[400]}
-          overflow="auto"
-        >
           <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            borderBottom={`4px solid ${colors.primary[500]}`}
-            colors={colors.grey[100]}
-            p="15px"
+            gridColumn={{
+              xs: "span 3",  // Prevents overflow on small screens
+              sm: "span 3",
+              md: "span 9",
+              lg: "span 9",
+            }}
+            gridRow="span 4"
           >
-            <Typography color={colors.grey[100]} variant="h5" fontWeight="600">
-              Recent Transactions
-            </Typography>
-          </Box>
-          {mockTransactions.map((transaction, i) => (
             <Box
-              key={`${transaction.txId}-${i}`}
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              borderBottom={`4px solid ${colors.primary[500]}`}
-              p="15px"
+              display="grid"
+              gridTemplateColumns={{
+                xs: "repeat(6, 1fr)",
+                sm: "repeat(12 1fr)",
+                md: "repeat(12, 1fr)",
+                lg: "repeat(12, 1fr)",
+              }}
+              //gridTemplateColumns="repeat(6, 1fr)"
+              gridAutoRows="100px"
+              gap="5px"
+              mt="0px"
             >
-              <Box>
-                <Typography
-                  color={colors.greenAccent[500]}
-                  variant="h5"
-                  fontWeight="600"
-                >
-                  {transaction.txId}
-                </Typography>
-                <Typography color={colors.grey[100]}>
-                  {transaction.user}
-                </Typography>
-              </Box>
-              <Box color={colors.grey[100]}>{transaction.date}</Box>
-              <Box
-                backgroundColor={colors.greenAccent[500]}
-                p="5px 10px"
-                borderRadius="4px"
-              >
-                ${transaction.cost}
-              </Box>
+              {Object.values(SMALL_WINDOW_TRENDS).map((code) => {
+                return (
+                  <Box
+                    key={code}
+                    gridColumn="span 6"
+                    gridRow="span 4"
+                    backgroundColor={colors.primary[400]}
+                  >
+                    {socket && <RealTimeMetricChart socket={socket} metricCodeProp={code} />}
+                  </Box>
+                )
+              })}
             </Box>
-          ))}
-        </Box>
-
-        {/* ROW 3 */}
-        <Box
-          gridColumn="span 4"
-          gridRow="span 2"
-          backgroundColor={colors.primary[400]}
-          p="30px"
-        >
-          <Typography variant="h5" fontWeight="600">
-            Campaign
-          </Typography>
-          <Box
-            display="flex"
-            flexDirection="column"
-            alignItems="center"
-            mt="25px"
-          >
-            <ProgressCircle size="125" />
-            <Typography
-              variant="h5"
-              color={colors.greenAccent[500]}
-              sx={{ mt: "15px" }}
-            >
-              $48,352 revenue generated
-            </Typography>
-            <Typography>Includes extra misc expenditures and costs</Typography>
-          </Box>
-        </Box>
-        <Box
-          gridColumn="span 4"
-          gridRow="span 2"
-          backgroundColor={colors.primary[400]}
-        >
-          <Typography
-            variant="h5"
-            fontWeight="600"
-            sx={{ padding: "30px 30px 0 30px" }}
-          >
-            Sales Quantity
-          </Typography>
-          <Box height="250px" mt="-20px">
-            <BarChart isDashboard={true} />
-          </Box>
-        </Box>
-        <Box
-          gridColumn="span 4"
-          gridRow="span 2"
-          backgroundColor={colors.primary[400]}
-          padding="30px"
-        >
-          <Typography
-            variant="h5"
-            fontWeight="600"
-            sx={{ marginBottom: "15px" }}
-          >
-            Geography Based Traffic
-          </Typography>
-          <Box height="200px">
-            <GeographyChart isDashboard={true} />
           </Box>
         </Box>
       </Box>

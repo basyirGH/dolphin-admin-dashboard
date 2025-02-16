@@ -1,0 +1,16 @@
+/* The glowing animation */
+.glowing-text {
+    background: linear-gradient(to right, white, transparent);
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: glow-animation 0.5s forwards;
+  }
+  
+  @keyframes glow-animation {
+    0% {
+      background-position: -100%;
+    }
+    100% {
+      background-position: 100%;
+    }
+  }
