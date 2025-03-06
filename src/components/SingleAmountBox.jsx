@@ -3,7 +3,7 @@ import numeral from 'numeral';
 import { ICONS } from "../constants";
 import { tokens } from "../theme";
 
-const StatBox = ({ amount, label, icon, progress, increase, prefix }) => {
+const SingleAmountBox = ({ amount, label, icon, progress, increase, prefix }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const textColor = theme.palette.mode === "dark" ? "#ffffff" : "#000000";
@@ -17,21 +17,21 @@ const StatBox = ({ amount, label, icon, progress, increase, prefix }) => {
   };
 
   const RateUpIcon = ICONS["RATE_UP"];
-  const RateFlatIcon = ICONS["RATE_FLAT"];
-  const rateColor = progress > 100 ? colors.greenAccent[400] : colors.grey[400];
+  const RateProgressIcon = ICONS["RATE_PROGRESS"];
+  const rateColor = progress > 99 ? colors.greenAccent[400] : colors.grey[400];
 
   return (
     <Box width="100%" m="0 20px">
       <Box display="flex" justifyContent="flex-start">
         {icon}
         <Box m="0 10px">
-          <Typography variant="h5" sx={{ color: textColor }}>
+          <Typography fontWeight={"light"} fontFamily={"lexend"} variant="h5" sx={{ color: textColor }}>
             {label}
           </Typography>
           <Typography
+            fontWeight={"light"} 
             mt="0px"
-            variant="h4"
-            fontWeight="bold"
+            variant="h3"
             sx={{ color: colors.grey[100] }}
           >
             {amount ?
@@ -42,16 +42,16 @@ const StatBox = ({ amount, label, icon, progress, increase, prefix }) => {
           </Typography>
           <Box mt="0px" display="flex">
             {progress ?
-              progress > 100 ?
+              progress > 99 ?
                 <RateUpIcon sx={{ fontSize: "15px", mt: "3px", mr: "3px", color: rateColor }} /> :
-                <RateFlatIcon sx={{ fontSize: "15px", mt: "3px", mr: "3px", color: rateColor }} />
-              : null}
+                <RateProgressIcon sx={{ fontSize: "15px", mt: "3px", mr: "3px", color: rateColor }} />
+              : <RateProgressIcon sx={{ fontSize: "15px", mt: "3px", mr: "3px", color: rateColor }} />}
             <Typography
-              fontSize="15px"
-              fontWeight="regular"
+              fontWeight={"light"}
+              fontSize="17px"
               color={rateColor}
             >
-              {progress ? progress + "%" : null}
+              {progress === 0 ? 0 + "%" : progress ? progress + "%" : "Unavailable"}
             </Typography>
           </Box>
         </Box>
@@ -60,4 +60,4 @@ const StatBox = ({ amount, label, icon, progress, increase, prefix }) => {
   );
 };
 
-export default StatBox;
+export default SingleAmountBox;

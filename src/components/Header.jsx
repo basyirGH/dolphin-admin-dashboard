@@ -5,18 +5,18 @@ const Header = ({ title, subtitle }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   return (
-    <Box mb="5px">
+    <Box display="flex" mb="0px">
       <Typography
         variant="h4"
         color={colors.primary}
         //fontWeight="bold"
-        sx={{ m: "0 0 5px 0" }}
+        sx={{ m: "4px 3px 10px 0" }}
       >
         {title}
       </Typography>
-      <Typography variant="h5" color={colors.grey[200]}>
+      {/* <Typography mt="2px" ml="5px" fontSize={"10px"}>
         {subtitle}
-      </Typography>
+      </Typography> */}
     </Box>
   );
 };

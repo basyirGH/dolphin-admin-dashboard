@@ -304,7 +304,7 @@ export const themeSettings = (mode) => {
               light: colors.grey[100],
             },
             background: {
-              default: colors.primary[500],
+              default: 'rgb(30, 30, 30)',
             },
           }
         : {

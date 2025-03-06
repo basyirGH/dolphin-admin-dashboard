@@ -1,16 +1,34 @@
-/* The glowing animation */
-.glowing-text {
-    background: linear-gradient(to right, white, transparent);
-    -webkit-background-clip: text;
-    color: transparent;
-    animation: glow-animation 0.5s forwards;
+.gradient-background-box {
+  position: relative;
+  background-color: #1D1F20; /* Default background */
+  overflow: hidden; /* Prevent pseudo-element overflow */
+}
+
+.gradient-background-box::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: linear-gradient(to bottom right, #f79533, #f37055, #ef4e7b, #a166ab, #5073b8, #1098ad, #07b39b, #6fba82);
+  opacity: 0; /* Initially hidden */
+  transition: opacity 0.5s ease; /* Fade transition */
+  background-size: 200% 200%;
+  animation: diagonalGradient 1s ease forwards;
+  animation-play-state: paused;
+}
+
+.gradient-background-box.clicked::after {
+  opacity: 1; /* Fade in on click */
+  animation-play-state: paused;
+}
+
+@keyframes diagonalGradient {
+  0% {
+    background-position: 100% 100%;
   }
-  
-  @keyframes glow-animation {
-    0% {
-      background-position: -100%;
-    }
-    100% {
-      background-position: 100%;
-    }
+  100% {
+    background-position: 0% 0%;
   }
+}

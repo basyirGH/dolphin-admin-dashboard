@@ -1,55 +1,61 @@
-import { useEffect, useMemo } from "react";
-import socketIO from "socket.io-client";
-import { useAuth } from "./AuthContext"; // Adjust the path as needed
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { io } from "socket.io-client";
+import { useAuth } from "./AuthContext";
 
 // Use WebSocket transport - disable polling. 
 // polling is default transport mechanism for compatibility with 
 // environments that do not fully support WebSocket. When polling is used, 
 // Socket.IO sends multiple HTTP requests (like GET, POST, and OPTIONS) 
 // during the connection lifecycle, especially for establishing the handshake before upgrading to a WebSocket connection
+
+/*
+A new Socket instance is returned for the namespace specified by the pathname in the URL, defaulting to /. For example, if the url is http://localhost/users, a transport connection will be established to http://localhost and a Socket.IO connection will be established to /users.
+*/
 const useSocket = () => {
-  const { token, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-
-  const socket = useMemo(() => {
-    if (!isAuthenticated){console.log("not auth"); return null};
-    /*
-    The document.cookie property in JavaScript is used to read, create, modify, and delete cookies in the browser. Cookies are small pieces of data stored on the client side (in the browser) and are sent to the server with every HTTP request. They are commonly used for session management, user preferences, and tracking.
-
-    path=/: This specifies the path on the server where the cookie is valid. Setting it to / means the cookie is accessible across the entire domain.
-    */
-    document.cookie = `Authorization=${token}; path=/;`;
-    return socketIO.connect("http://localhost:8081", {
-      // extraHeaders: {
-      //   Authorization: token,
-      // }, // does not work, use cookies instead
-      transports: ["websocket"],
-    });
-  }, [token, isAuthenticated]);
+  const { token, isAuthenticated, firstAttemptDone } = useAuth();
+  const [socket, setSocket] = useState(null);
+  const [message, setMessage] = useState("");
+  const [attemptCount, setAttemptCount] = useState(0);
+  const attemptDelay = 1000;
 
   useEffect(() => {
+    if (!isAuthenticated && firstAttemptDone) {
+      setSocket(null);
+      setMessage("(auth failure).");
+      setAttemptCount(0);
+      return;
+    } 
 
-    if (!socket) return;
-
-    // Listen for connection errors
-    socket.on("connect_error", (error) => {
-      console.error("Socket connection failed:", error.message);
-      //navigate("/login");
+    const conn = io("http://localhost:8081", {
+      reconnectionDelayMax: attemptDelay,
+      transports: ["websocket"],
+      query: { token },
     });
 
-    // Cleanup logic to disconnect the socket when the component unmounts
+    conn.on("connect", () => {
+      setSocket(conn);
+      setMessage("(connected)");
+      setAttemptCount(0); // Reset on successful connection
+    });
+
+    conn.on("connect_error", (error) => {
+      setSocket(null);
+      setMessage("(connection failure: "+error+"). retrying...");
+      setAttemptCount((prevCount) => prevCount + 1);
+    });
+
     return () => {
-      if (socket.connected) {
-        socket.disconnect();
-        console.log("Socket disconnected");
-      };
-
+      if (conn.connected) {
+        conn.disconnect();
+      }
     };
-  }, [socket]);
+  }, [token, isAuthenticated]);
 
-  return socket;
+  // Ensure `message` and `attemptCount` updates are tracked
+  useEffect(() => {
+  }, [attemptCount, message]);
+
+  return { socket, message, attemptCount }; // Destructure these in components
 };
-
 
 export default useSocket;

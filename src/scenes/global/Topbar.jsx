@@ -1,82 +1,53 @@
-import { GitHub } from "@mui/icons-material";
-import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
-import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
-import { Box, IconButton, Typography, useTheme } from "@mui/material";
-import { useContext } from "react";
-import { ColorModeContext, tokens } from "../../theme";
+import { Box, IconButton, Typography, useMediaQuery, useTheme } from "@mui/material";
+import ResponsiveMenu from "../../components/ResponsiveMenu";
 import "./title.css";
-import { Logout } from "@mui/icons-material";
-import { Code } from "@mui/icons-material";
-import { useAuth } from "../../utils/AuthContext";
-
 
 const Topbar = () => {
   const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-  const colorMode = useContext(ColorModeContext);
-  const {logout} = useAuth();
+  const textColor = theme.palette.mode === "dark" ? "#ffffff" : "#000000";
+  const isSmallScreen = useMediaQuery("(max-width:500px)"); // Adjust breakpoint as needed
+
 
   return (
-    <Box display="flex" justifyContent="space-between" p={2}>
-      {/* SEARCH BAR */}
-      {/* <Box
-        display="flex"
-        backgroundColor={colors.primary[400]}
-        borderRadius="3px"
-      >
-        <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search" />
-        <IconButton type="button" sx={{ p: 1 }}>
-          <SearchIcon />
-        </IconButton>
-      </Box> */}
-      <Box display={"flex"}>
-        <img width={"30px"} src="https://www.svgrepo.com/show/400173/dolphin.svg"/>
-        <Typography
-          marginLeft={"5px"}
-          marginTop={"5px"}
-          fontWeight={"bold"}
-          variant={"h3"}>
-          Dolphin
-        </Typography>
-      </Box>
+    <Box m="15px 15px 0px 15px" display="flex" justifyContent="space-between" >
+      <Box>
+        {/* <img width={"30px"} src="https://www.svgrepo.com/show/400173/dolphin.svg" /> */}
+        <Box display={"flex"} flexDirection={"column"}>
+          <Box mb="3px" display={"flex"} flexDirection={"row"}>
 
-      {/* ICONS */}
-      <Box display="flex">
-        {/* <IconButton>
-          <span>Experience</span>
-        </IconButton>*/}
-        {/* <Typography  variant="h5">
-          System Design
-        </Typography>
-        <Typography variant="h5">
-          About
-        </Typography> */}
-        <IconButton>
-          <Typography>System Design</Typography>
-        </IconButton>
-        <IconButton>
-          <Typography>About</Typography>
-        </IconButton>
-        {/* <IconButton onClick={colorMode.toggleColorMode}>
-          {theme.palette.mode === "dark" ? (
-            <DarkModeOutlinedIcon />
-          ) : (
-            <LightModeOutlinedIcon />
-          )}
-        </IconButton> */}
-        {/* <IconButton onClick={logout}>
-          <Logout />
-        </IconButton> */}
-        {/* <IconButton>
-          <NotificationsOutlinedIcon />
-        </IconButton>
-        <IconButton>
-          <SettingsOutlinedIcon />
-        </IconButton>
-        <IconButton>
-          <PersonOutlinedIcon />
-        </IconButton> */}
+            <Typography
+              fontFamily={"lexend"}
+              fontWeight={"bold"}
+              variant={"h3"}
+            >
+              Dolphin
+            </Typography>
+            <Typography mt="6px" mb="6px" pl="7px" pr="7px" sx={{ borderRadius: '0px', color: 'black', backgroundColor: 'white' }} ml="10px" fontSize="10px" fontFamily={"lexend"}> BETA</Typography>
+            {/* <Typography fontFamily={"lexend"} fontSize="12px">
+            {"software engineer | beyond the resume"}
+          </Typography> */}
+          </Box>
+          <Typography fontFamily={"lexend"} variant={"h6"} fontWeight={"light"}>
+            Simple, Live Analytics e-Commerce Dashboard
+          </Typography>
+        </Box>
       </Box>
+      {isSmallScreen ? <ResponsiveMenu /> :
+        <Box gap="10px" display="flex">
+          <Box
+            onClick={() => window.open("https://www.linkedin.com/in/mohamad-basyir-bin-zainuddin-0b411220b/", "_blank")} display="flex" sx={{ textDecoration: 'underline', cursor: 'pointer' }} fontFamily={"lexend"} variant="h5" fontWeight={"regular"}
+          >
+            <img width="30px" src="https://raw.githubusercontent.com/basyirGH/images/main/linkedin-svgrepo-com.svg" />
+
+          </Box>
+          <Box
+            onClick={() => window.open("https://github.com/basyirGH?tab=repositories", "_blank")} display="flex" sx={{ textDecoration: 'underline', cursor: 'pointer' }} fontFamily={"lexend"} variant="h5" fontWeight={"regular"}
+          >
+            <img width="30px" src="https://raw.githubusercontent.com/basyirGH/images/main/github-svgrepo-com (3).svg" />
+
+          </Box>
+        </Box>
+      }
     </Box>
   );
 };

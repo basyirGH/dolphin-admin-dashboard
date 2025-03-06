@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const navigate = useNavigate();
+    const [firstAttemptDone, setFirstAttemptDone] = useState(false);
     const [token, setToken] = useState();
     const login = (userToken) => {
         setToken(userToken);
@@ -16,6 +16,9 @@ export const AuthProvider = ({ children }) => {
         */
         //localStorage.setItem("jwt", token)
     };
+    const authOnce = () => {
+        setFirstAttemptDone(true);
+    }
     // const logout = () => {
     //     Cookies.remove("jwt");
     //     setToken(null);
@@ -24,8 +27,10 @@ export const AuthProvider = ({ children }) => {
     // used to explicitly convert a value to a boolean.
     // NOT(NOT(EMPTY STRING)) = FALSY. NOT(NOT(STRING)) = TRUTHY
     const isAuthenticated = !!token;
+
+
     return (
-        <AuthContext.Provider value={{ token, isAuthenticated, login }}>
+        <AuthContext.Provider value={{ token, isAuthenticated, login, authOnce, firstAttemptDone  }}>
             {children}
         </AuthContext.Provider>
     );

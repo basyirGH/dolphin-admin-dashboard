@@ -29,6 +29,8 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
     chartLabelRef.current.textContent = update.label;
   });
 
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   // Init chart instance
   useEffect(() => {
     const chartInstance = Highcharts.chart(chartContainerRef.current, {
@@ -57,7 +59,7 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
         valueSuffix: ' orders',
       },
       tooltip: {
-        pointFormat: "{series.name}: <b>{point.y} ({point.percentage:.1f}%)</b>",
+        pointFormat: "{series.name}: <b>{point.y} orders ({point.percentage:.1f}%)</b>",
       },
       plotOptions: {
         series: {
@@ -89,7 +91,7 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
           }
         },
       },
-      // colors: [colors.blueAccent[300], colors.blueAccent[400], colors.blueAccent[500], colors.pinkAccent[300], colors.pinkAccent[400]], // Base colors for gradients
+      // colors: [colors.blueAccent[300], colors.blueAccent[400], colors.blueAccent[600], colors.pinkAccent[300], colors.pinkAccent[400]], // Base colors for gradients
       series: [
         {
           type: 'pie',
@@ -97,6 +99,9 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
       ],
       credits: {
         enabled: false
+      },
+      time: {
+        timezone: userTimezone
       },
       accessibility: {
         enabled: true
@@ -138,6 +143,9 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
 
       try {
         chart.update({
+          animation: {
+            enabled: true
+          },
           series: [
             {
               name: selectedTimeframeValue,
@@ -148,18 +156,30 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
                   color: color
                 }
                 )
-
               )
-              : []
+                : []
             }
           ]
         });
+        // chart.addSeries({
+        //   type: 'pie', // Ensure the series remains a pie chart
+        //   name: selectedTimeframeValue,
+        //   data: selectedData?.series
+        //     ? selectedData.series.map(([demography, orders, color]) => ({
+        //         name: demography,
+        //         y: orders,
+        //         color: color
+        //       }))
+        //     : []
+        // });
+
 
 
       } catch (error) {
         console.error('Error updating chart:', error);
       }
     }
+    //console.log("newdata: " + JSON.stringify(newData, null, 2))
   }, [newData, selectedTimeframeKey, chart]);
 
   const IconComponent = ICONS["DEMOGRAPHY"];
@@ -170,12 +190,12 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
       p="15px 20px"
     >
       <Box display="flex">
-        <IconComponent sx={{ color: colors.greenAccent[400], fontSize: "30px", mt: "5px", mr: "10px" }} />
+        <IconComponent sx={{ color: colors.blueAccent[400], fontSize: "30px", mt: "0px", mr: "10px" }} />
         <Typography
-        width={"120px"}
-          mb="0px"
+          fontWeight={"light"} 
+          fontFamily={"lexend"}
+          mb="35px"
           variant="h5"
-          fontWeight="regular"
           color={textColor}>
           <span ref={chartLabelRef}></span>
         </Typography>

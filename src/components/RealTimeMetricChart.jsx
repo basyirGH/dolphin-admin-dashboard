@@ -23,14 +23,14 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
     let lastUpdate;
     let zeroIntervalId; // To manage the interval for replicating zero updates
     let subMetricTimeoutId;
-    let zeroIntervalMS = 5000;
+    let zeroIntervalMS = 15000;
     let axisTitleIsSet = false;
     const chartRef = useRef();
     const subMetricNameRef = useRef();
     const subMetricAmountRef = useRef(0);
     const subMetricPrefix = useRef();
     const eventNameRef = useRef();
-    const maxDataPoints = 50;
+    const maxDataPoints = 80;
     const theme = useTheme();
     const textColor = theme.palette.mode === "dark" ? "#ffffff" : "#000000";
     const submetricTimeoutMS = 60000;
@@ -38,18 +38,18 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
 
     // Init socket event and listener
     const initSocketLineChartEvent = () => {
-        socket.emit(SOCKET_EVENTS.INIT_LINE_CHARTS, {}, (ackResponse) => {
+        socket.emit(SOCKET_EVENTS.INIT_LINE_CHARTS, { timeOccured: Date.now() }, (ackResponse) => {
             // console.log("Ack from server:", ackResponse); // Optional acknowledgment logging
         });
     };
 
     // Listen for socket updates
-    socket.on(LINE_CHART_METRIC_CODES.SMALL_WINDOW_TRENDS, (update) => {
-        // console.log("update: " + JSON.stringify(update, null, 2));
+    socket.on(LINE_CHART_METRIC_CODES.REAL_TIME_TRENDS, (update) => {
+        //console.log("update: " + JSON.stringify(update, null, 2));
 
         // If the update contains valid data, process it and restart the zero replication
         lastUpdate = update;
-        //console.log("update: " + JSON.stringify(update, null, 2))
+        console.log("update: " + JSON.stringify(update, null, 2))
         addSeries(update);
         // Restart the zero-value interval to ensure continuity
         startZeroReplication();
@@ -85,6 +85,8 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
 
         const line = update.aggregatedData.find((line) => line.metricCode === metricCodeProp);
 
+        //console.log("line: " + JSON.stringify(line, null, 2))
+
         if (line) {
             // console.log("line: " + JSON.stringify(line, null, 2));
             const type = line.type;
@@ -95,7 +97,7 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
                 linearGradient: { x1: 0, x2: 0, y1: 0, y2: 1 },
                 stops: [
                     [0, lineColor],
-                    [1, lineColor]
+                    [1, lineColor + "00"]
                 ]
             };
             let series = chart.series.find((s) => s.name === seriesName);
@@ -179,6 +181,8 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
         chart.redraw();
     }
 
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     // Initialize the chart
     const options = {
         chart: {
@@ -232,6 +236,9 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
         scrollbar: {
             enabled: true
         },
+        time: {
+            timezone: userTimezone
+        }
     }
 
     const IconComponent = ICONS[metricCodeProp];
@@ -240,15 +247,12 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
         <div>
             <Box
                 p="15px 20px"
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
             >
                 <Box>
                     <Box display="flex">
                         <IconComponent
                             sx={{
-                                color: colors.greenAccent[400],
+                                color: colors.blueAccent[400],
                                 fontSize: "30px",
                                 mt: "1px",
                                 mr: "10px"
@@ -256,25 +260,27 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
                         />
                         <Box>
                             <Typography
+                                fontWeight={"light"}
+                                fontFamily={"lexend"}
                                 mb="0px"
                                 pb="0px"
                                 variant="h5"
-                                fontWeight="regular"
                                 color={textColor}>
                                 <span ref={eventNameRef}></span>
                             </Typography>
                             <Box display="flex">
                                 <Typography
-                                    variant="h4"
-                                    fontWeight="bold"
+                                    variant="h5"
+                                    fontWeight={"light"}
+                                    fontFamily={"lexend"}
                                     color={textColor}
                                     mb="0px"
                                 >
                                     <span ref={subMetricPrefix}></span>
                                 </Typography>
                                 <Typography
-                                    variant="h4"
-                                    fontWeight="bold"
+                                    variant="h5"
+                                    fontWeight={"light"}
                                     color={textColor}
                                     mb="0px"
                                 >
@@ -282,7 +288,7 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
                                 </Typography>
                                 <Typography
                                     ml="5px"
-                                    mt="3px"
+                                    mt="0px"
                                     component="span" // Render as span to keep it inline
                                     variant="h6"  // Use a smaller variant like body2
                                 >
