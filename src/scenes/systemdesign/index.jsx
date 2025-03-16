@@ -18,7 +18,7 @@ const SystemDesign = () => {
                 gap="20px"
             >
                 <Box gridColumn={"span 1"} textAlign={"center"}>
-                    <FullScreenImage src="https://raw.githubusercontent.com/basyirGH/images/main/dolphin-architecture.whydark.drawio.svg"/>
+                    <FullScreenImage src="https://raw.githubusercontent.com/basyirGH/images/main/dolphin-system-design.drawio.svg"/>
                 </Box>
                 <Box display={"flex"} flexDirection={"column"} justifyContent={"center"} gridColumn={"span 1"} mb="80px">
                     <Typography mb="10px" fontFamily={"lexend"} variant="h4" fontWeight={"regular"}>

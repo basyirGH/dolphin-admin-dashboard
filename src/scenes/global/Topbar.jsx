@@ -22,13 +22,13 @@ const Topbar = () => {
             >
               Dolphin
             </Typography>
-            <Typography mt="6px" mb="6px" pl="7px" pr="7px" sx={{ borderRadius: '0px', color: 'black', backgroundColor: 'white' }} ml="10px" fontSize="10px" fontFamily={"lexend"}> BETA</Typography>
+            <Typography mt="7px" mb="5px" pl="7px" pr="7px" sx={{ borderRadius: '0px', color: 'black', backgroundColor: 'white' }} ml="10px" fontSize="10px" fontFamily={"lexend"}> PROTOTYPE</Typography>
             {/* <Typography fontFamily={"lexend"} fontSize="12px">
             {"software engineer | beyond the resume"}
           </Typography> */}
           </Box>
           <Typography fontFamily={"lexend"} variant={"h6"} fontWeight={"light"}>
-            Simple, Live Analytics e-Commerce Dashboard
+            Simple, Live e-Commerce Analytics Dashboard
           </Typography>
         </Box>
       </Box>

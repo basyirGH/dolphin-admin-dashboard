@@ -45,13 +45,13 @@ const SingleAmountBox = ({ amount, label, icon, progress, increase, prefix }) =>
               progress > 99 ?
                 <RateUpIcon sx={{ fontSize: "15px", mt: "3px", mr: "3px", color: rateColor }} /> :
                 <RateProgressIcon sx={{ fontSize: "15px", mt: "3px", mr: "3px", color: rateColor }} />
-              : <RateProgressIcon sx={{ fontSize: "15px", mt: "3px", mr: "3px", color: rateColor }} />}
+              : <RateProgressIcon sx={{ fontSize: "15px", mt: "4px", mr: "3px", color: rateColor }} />}
             <Typography
               fontWeight={"light"}
-              fontSize="17px"
+              fontSize="15px"
               color={rateColor}
             >
-              {progress === 0 ? 0 + "%" : progress ? progress + "%" : "Unavailable"}
+              {progress === 0 ? 0 + "%" : progress ? progress + "%" : ""}
             </Typography>
           </Box>
         </Box>

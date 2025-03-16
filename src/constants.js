@@ -2,7 +2,7 @@ import LocalMallIcon from '@mui/icons-material/LocalMall';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import ScatterPlotIcon from '@mui/icons-material/ScatterPlot';
 import StackedLineChartIcon from '@mui/icons-material/StackedLineChart';
-import { Assistant, AutoAwesome, Circle, CloseOutlined, CreditCard, Help, Info, InfoOutlined, Menu, PlayArrow, Stop, SwapVert } from '@mui/icons-material';
+import { Assistant, AutoAwesome, Circle, CloseOutlined, CreditCard, Help, Info, InfoOutlined, Menu, PlayArrow, ShoppingCart, ShoppingCartOutlined, Stop, SwapVert } from '@mui/icons-material';
 import { Grain } from '@mui/icons-material';
 import { GridView } from '@mui/icons-material';
 import { Payments } from '@mui/icons-material';
@@ -42,7 +42,13 @@ export const SOCKET_EVENTS = {
     INIT_SINGLE_AMOUNTS: "INIT_SINGLE_AMOUNTS",
     INIT_LINE_CHARTS: "INIT_LINE_CHARTS",
     INIT_PIE_CHARTS: "INIT_PIE_CHARTS",
-    SIMULATE_NEW_ORDER: "SIMULATE_NEW_ORDER"
+    SIMULATE_NEW_ORDER: "SIMULATE_NEW_ORDER",
+    DIVER_NEW_PROMPT: "DIVER_NEW_PROMPT",
+    DIVER_RESPONSE: "DIVER_RESPONSE",
+    ASK_SIM_STATUS: "ASK_SIM_STATUS",
+    BROADCAST_ANSWER_SIM_STATUS: "BROADCAST_ANSWER_SIM_STATUS",
+    BROADCAST_ASK_SIM_STATUS: "BROADCAST_ASK_SIM_STATUS",
+    ANSWER_SIM_STATUS: "ANSWER_SIM_STATUS"
 }
 
 export const TIMEFRAMES = {
@@ -70,4 +76,5 @@ export const ICONS = {
     STOP: Stop,
     ASSISTANT: AutoAwesome,
     CLOSE: CloseOutlined,
+    CART: ShoppingCartOutlined,
 };

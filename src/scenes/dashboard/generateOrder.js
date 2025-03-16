@@ -1,18 +1,21 @@
-const getRandomNumber = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-const getCurrentDate = () => new Date().toISOString();
+import { format } from 'date-fns-tz';
 
-const generateOrder = () => {
-  const currentDate  =getCurrentDate();
-  //console.log("+1 new order, date: " + currentDate)
+// Math.random() gives decimal from 0 inclusive to 1 exclusive
+const getRandomNumber = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const getCurrentDate = (timeZone = 'Asia/Kuala_Lumpur') => {
+  return format(new Date(), "yyyy-MM-dd'T'HH:mm:ssXXX", { timeZone });
+};
+
+const generateOrder = (customerId, productId, orderDate, pricePerUnit) => {
+  console.log("+1 new order, date: " + orderDate)
   return {
-    customerId: getRandomNumber(1, 9),
-    orderDate: currentDate,
+    customerId: customerId,
+    orderDate: orderDate,
     items: [
-      { productId: 1, quantity: getRandomNumber(1, 10), pricePerUnit: 0.98 },
-      { productId: 2, quantity: getRandomNumber(1, 10), pricePerUnit: 1.29 },
-      { productId: 3, quantity: getRandomNumber(1, 10), pricePerUnit: 0.54 },
+      { productId: productId, quantity: getRandomNumber(1, 3), pricePerUnit: pricePerUnit},
     ],
-  };
+  }
+
 };
 
 export default generateOrder;

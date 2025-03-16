@@ -30,7 +30,7 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
     const subMetricAmountRef = useRef(0);
     const subMetricPrefix = useRef();
     const eventNameRef = useRef();
-    const maxDataPoints = 80;
+    const maxDataPoints = 500;
     const theme = useTheme();
     const textColor = theme.palette.mode === "dark" ? "#ffffff" : "#000000";
     const submetricTimeoutMS = 60000;
@@ -49,7 +49,7 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
 
         // If the update contains valid data, process it and restart the zero replication
         lastUpdate = update;
-        console.log("update: " + JSON.stringify(update, null, 2))
+        //console.log("update: " + JSON.stringify(update, null, 2))
         addSeries(update);
         // Restart the zero-value interval to ensure continuity
         startZeroReplication();

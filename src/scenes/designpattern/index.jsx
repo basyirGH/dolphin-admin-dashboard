@@ -31,7 +31,7 @@ const DesignPattern = () => {
                         When an order is made, SocketIOController publishes events to update the metrics' states. They generate metrics through the factory pattern because each event aggregates data differently. <br /><br />
 
                         First,  the listener responses by using MetricFactory to get a Metric instance. Inside the factory, Spring scans for MetricCreator beans and assign them with enums as an identifier. In an event class (the scanned bean), OrderService provides structured data, while other presentation properties are defined too. Once instantiated, the metric is returned to the factory, which is then used by the listener to broadcast the event application-wide via the socket.<br/><br/>
-                        The simulation was supposed to send orders over REST sequentially, but due to Google Cloud Run's one-service-one-port limitation, protocols had to be separated. So, they are sent through the existing socket connection and follow the same factory pattern.
+                        The simulation was supposed to send orders over REST sequentially, but due to Cloud Run's one-service-one-port limitation, protocols had to be separated to their own Docker container. So, they are sent through the existing socket connection and follow the same factory pattern.
 
                         {/* In the same socket connection, an Order object is sent to publish NewOrderEvent, thus triggering the listener. From here, the event object generates  */}
                     </Typography>

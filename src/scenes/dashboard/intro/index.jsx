@@ -15,14 +15,14 @@ const Intro = () => {
                     xs: "repeat(1, 1fr)",
                     sm: "repeat(1, 1fr)",
                     md: "repeat(1, 1fr)",
-                    lg: "repeat(2, 1fr)",
+                    lg: "repeat(1, 1fr)",
                 }}
 
                 gap="0px"
             >
-                <Box gridColumn="span 1" gridRow="span 1">
-                    <img alt="retro and vibrant decorative sci-fi image" width="100%" height={"100%"} src={`https://raw.githubusercontent.com/basyirGH/images/main/5.jpg`} />
-                </Box>
+                {/* <Box gridColumn="span 1" gridRow="span 1">
+                    <img alt="retro and vibrant decorative sci-fi image" width="100%" height={"100%"} src={`https://raw.githubusercontent.com/basyirGH/images/main/2.jpg`} />
+                </Box> */}
                 <Box m="20px 20px 20px 20px" display="flex" flexDirection={"column"} justifyContent={"center"} >
                     <Typography mt="40px" color="white" fontFamily={"lexend"} variant="h4" fontWeight={"regular"}>Thank You For Visiting!</Typography>
                     <Typography color="white" mt="10px" mb="5px" fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
@@ -48,19 +48,19 @@ const Intro = () => {
                             </Box>
                         </Box>
                     </Typography>
-                    <Typography color="white" mt="20px" fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
-                        Past involvements (public):
+                    <Typography color="white" mt="20px" mb="10px" fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
+                       Past projects (public):
                     </Typography>
                     <Box >
-                        <Typography color="white" onClick={() => window.open("https://myenergystats.st.gov.my/dashboard", "_blank")} display="flex" sx={{ textDecoration: 'underline', cursor: 'pointer' }} fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
-                            Energy Comission's MyEnergyStats © (Software Engineer)
+                        <Typography color="white" onClick={() => window.open("https://myenergystats.st.gov.my/dashboard", "_blank")} display="flex" sx={{ textDecoration: '', cursor: 'pointer' }} fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
+                            Software Engineer, Energy Comission's MyEnergyStats ©
                             <Box mt="3px" ml="5px" mr="20px">
                                 <img width="15px" src="https://raw.githubusercontent.com/basyirGH/images/main/new-window-svgrepo-com (1).svg" />
                             </Box>
                             <br />
                         </Typography>
-                        <Typography color="white" onClick={() => window.open("https://www.quickredit.my/index.html", "_blank")} display="flex" sx={{ textDecoration: 'underline', cursor: 'pointer' }} fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
-                            ManagePay Sdn. Bhd.'s QuicKredit ©   (Junior Java Developer)
+                        <Typography color="white" onClick={() => window.open("https://www.quickredit.my/index.html", "_blank")} display="flex" sx={{ textDecoration: '', cursor: 'pointer' }} fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
+                            Junior Java Developer, ManagePay Sdn. Bhd.'s QuicKredit ©
                             <Box mt="3px" ml="5px" mr="20px">
                                 <img width="15px" src="https://raw.githubusercontent.com/basyirGH/images/main/new-window-svgrepo-com (1).svg" />
                             </Box>

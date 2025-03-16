@@ -1,21 +1,21 @@
 
-import { Box, Button, ButtonGroup, Drawer, Input, TextField, Tooltip, Typography, useTheme } from "@mui/material";
-import { useEffect, useState, useRef } from "react";
-import { ICONS, METRIC_TYPES, SINGLE_AMOUNT_METRIC_CODES, REAL_TIME_TRENDS, SOCKET_EVENTS, TIMEFRAMES } from "../../constants";
+import '@fontsource/lexend/500.css';
+import { ChevronRight, Close, KeyboardArrowDown, Refresh, ShoppingCart } from "@mui/icons-material";
+import { Box, Button, ButtonGroup, Chip, Drawer, FormControlLabel, LinearProgress, Slider, Switch, TextField, Tooltip, Typography, useTheme } from "@mui/material";
+import { styled } from "@mui/material/styles";
+import { useEffect, useRef, useState } from "react";
+import DemographyPieChart from "../../components/DemographyPieChart";
+import RealTimeMetricChart from "../../components/RealTimeMetricChart";
+import SingleAmountBox from "../../components/SingleAmountBox";
+import { ICONS, METRIC_TYPES, REAL_TIME_TRENDS, SINGLE_AMOUNT_METRIC_CODES, SOCKET_EVENTS, TIMEFRAMES } from "../../constants";
 import { tokens } from "../../theme";
 import { apiRequestUtility } from "../../utils/apiRequestUtility";
 import { useAuth } from "../../utils/AuthContext";
-import DemographyPieChart from "../../components/DemographyPieChart";
-import Header from "../../components/Header";
-import RealTimeMetricChart from "../../components/RealTimeMetricChart";
-import SingleAmountBox from "../../components/SingleAmountBox";
-import generateOrder from "./generateOrder"
 import useSocket from "../../utils/useSocket";
-import '@fontsource/lexend/500.css';
-import "./style.css"
+import "./style.css";
+import Simulation from './Simulation';
 
 const Dashboard = () => {
-  const [simStarted, setSimStarted] = useState(false);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { socket, message, attemptCount } = useSocket();
@@ -26,16 +26,8 @@ const Dashboard = () => {
   const [timeframeMessage, setTimeframeMessage] = useState();
   const [timeframeChanged, setTimeframeChanged] = useState(false);
   const [currentTimeframeMessage, setCurrentTimeframeMessage] = useState();
-  const [simLog, setSimLog] = useState("");
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const orderCountRef = useRef(0); // Track order count
-  const MAX_ORDERS = 10;
+  const [diverOpen, setDiverOpen] = useState(false);
   const ANIM_DELAY = 500;
-  const SIM_DELAY = 3000;
-  const SIM_LIMIT_ITEM_NAME = "ordersMaxedOut"
-  const orderLimitReached = localStorage.getItem(SIM_LIMIT_ITEM_NAME) === "true";
-  const LIMIT_REACHED_LOG = "> orders limit reached, sim stopped.";
-
 
   // Log in internally and keep token in memory
   initAuth();
@@ -71,16 +63,16 @@ const Dashboard = () => {
   useEffect(() => {
 
     if (!socket) {
-      setSimLog(message ? "> metrics and sim cannot run right now " + message + `(${attemptCount})` : "> ")
+      // setSimLog(message ? "> metrics and sim cannot run right now " + message + `(${attemptCount})` : "> ")
       return;
     } else {
-      setSimLog(orderLimitReached ? LIMIT_REACHED_LOG : "> ready")
+      // setSimLog(orderLimitReached ? LIMIT_REACHED_LOG : "> ready")
     }
     socket.emit(SOCKET_EVENTS.INIT_SINGLE_AMOUNTS, {}, () => {
       // console.log("Ack from server:", JSON.stringify(ackResponse, null, 2));
     });
     const handleMetricEvent = (metricCode) => (metricUpdate) => {
-      //console.log("res! metricupdate: " + JSON.stringify(metricUpdate, null, 2));
+      // console.log("res! metricupdate: " + JSON.stringify(metricUpdate, null, 2));
       const updatedType = metricUpdate.type;
       setSingleAmounts((prev) =>
         prev.map((type) => {
@@ -118,6 +110,9 @@ const Dashboard = () => {
     Object.values(SINGLE_AMOUNT_METRIC_CODES).forEach((code) => {
       socket.on(code, handleMetricEvent(code));
     });
+
+    socket.on(SOCKET_EVENTS.DIVER_RESPONSE, (response) => handleDiverResponse(response));
+
     return () => {
       Object.values(SINGLE_AMOUNT_METRIC_CODES).forEach((code) => {
         socket.off(code);
@@ -126,46 +121,6 @@ const Dashboard = () => {
     };
   }, [socket, message, attemptCount]);
 
-  // when simStarted=true, emit new orders repeatedly one after another with 1 sec delay instead of recursion that could overwhelm the server
-  useEffect(() => {
-    let running = true;
-
-    async function initSim() {
-      try {
-        while (running && orderCountRef.current < MAX_ORDERS) {
-          setSimLog(`> sending order ${orderCountRef.current + 1} of ${MAX_ORDERS}...`);
-
-          const response = await sendOrder(generateOrder());
-
-          if (response.status === "200") {
-            setSimLog(`> +1 order OK (${orderCountRef.current + 1}/${MAX_ORDERS})`);
-            orderCountRef.current++;
-          } else {
-            setSimLog("> order failed, trying again...");
-          }
-
-          await new Promise((resolve) => setTimeout(resolve, SIM_DELAY));
-
-          if (!running) break;
-        }
-
-        if (orderCountRef.current >= MAX_ORDERS) {
-          setSimStarted(false);
-          localStorage.setItem(SIM_LIMIT_ITEM_NAME, true);
-          setSimLog(LIMIT_REACHED_LOG);
-        }
-      } catch (error) {
-        console.error("Error simulating order:", error);
-      }
-    }
-
-    if (simStarted && !orderLimitReached) initSim();
-
-    return () => {
-      running = false;
-      setSimLog(orderCountRef.current >= MAX_ORDERS || orderLimitReached ? LIMIT_REACHED_LOG : "> sim stopped");
-    };
-  }, [simStarted]);
 
   const handleTimeframeChange = (timeframeKey, timeframeValue) => {
     setSelectedTimeframeKey(timeframeKey);
@@ -200,17 +155,7 @@ const Dashboard = () => {
 
   const timeframeSelectShadow = "0px -5px 0px 0px rgb(0, 136, 255)";
 
-  function sendOrder(body) {
-    return new Promise((resolve, reject) => {
-      socket.emit(SOCKET_EVENTS.SIMULATE_NEW_ORDER, body, (ackResponse) => {
-        if (ackResponse.error) {
-          reject(ackResponse.error);
-        } else {
-          resolve(ackResponse);
-        }
-      });
-    });
-  }
+
 
   const [tooltipOpen, setToolTipOpen] = useState(false);
   const touchTriggeredRef = useRef(false); // Track touch events
@@ -226,22 +171,91 @@ const Dashboard = () => {
     }, 7000);
   };
 
-  const [isAIBoxClicked, setIsAIBoxClicked] = useState(false);
+  const HelpIcon = ICONS.HELP;
 
-  const handleAIBoxClick = () => {
-    setIsAIBoxClicked(true);
-    setTimeout(() => {
-      setIsAIBoxClicked(false);
-    }, 1000); // Reset after 1 second
+  const promptExamples = (
+    <>
+      Ask me questions like: <br />
+      1. How much revenue was generated on 1 Jan 2025? <br />
+      2. Which product category was most ordered by men under 25 yesterday? <br />
+      3. Did this year's January outsell last year's? <br />
+      4. Rank the best to worst performing days in terms of orders count. <br />
+      5. Give hourly breakdown of today's sales trend, as well as peaks and slows.
+    </>
+  )
+
+  const handleDiverClick = () => {
+    setDiverOpen(!diverOpen);
   };
 
+  const [diverMessage, setDiverMessage] = useState(promptExamples);
+  const [userPrompt, setUserPrompt] = useState();
+  const [promptInput, setPromptInput] = useState("");
+  const [promptInputError, setPromptInputError] = useState(false);
 
+  function sendPromptToDiver(body) {
+    return new Promise((resolve, reject) => {
+      socket.emit(SOCKET_EVENTS.DIVER_NEW_PROMPT, body, (ackResponse) => {
+        resolve(ackResponse);
+      });
+    });
+  }
 
-  const HelpIcon = ICONS.HELP;
-  const PlayIcon = ICONS.PLAY;
-  const StopIcon = ICONS.STOP;
-  const AssistantIcon = ICONS.ASSISTANT;
-  const CloseIcon = ICONS.CLOSE;
+  const [waitingDiver, setWaitingDiver] = useState(false);
+
+  const handleNewDiverPrompt = async (prompt) => {
+
+    if (!prompt.trim()) {
+      setPromptInputError(true);
+      return;
+    }
+    setPromptInputError(false);
+
+    let body = {
+      text: prompt,
+    }
+    setUserPrompt(prompt);
+    setPromptInput("");
+    try {
+      setWaitingDiver(true);
+      await sendPromptToDiver(body);
+    } catch (error) {
+      console.error("diver error after a prompt: " + error)
+      setDiverMessage("The server has encountered an error processing this prompt. Try again later.");
+    } finally {
+      setWaitingDiver(false);
+    }
+  }
+
+  const handleDiverResponse = (responseBody) => {
+    setDiverMessage(responseBody.response);
+  }
+
+  const CustomLinearProgress = styled(LinearProgress)({
+    height: 2,
+    borderRadius: 2,
+    backgroundColor: "#121212",
+    "& .MuiLinearProgress-bar": {
+      background: "linear-gradient(90deg,rgb(0, 50, 200),rgb(30, 0, 255),rgb(47, 0, 255),rgb(106, 0, 255),rgb(200, 0, 255),rgb(183, 0, 125))",
+    },
+  });
+
+  const handleCloseUserPrompt = () => {
+    setDiverMessage(promptExamples);
+    setUserPrompt(null);
+  }
+
+  const simDrawerWidth = 350;
+  const [simOpen, setSimOpen] = useState(false);
+  const [simStartedState, setSimStartedState] = useState(false);
+
+  useEffect(() => {
+    if (simStartedState) {
+      handleTimeframeChange("SIMULATION", "SIMULATION")
+    } else {
+      handleTimeframeChange("WEEKLY", TIMEFRAMES.WEEKLY)
+    }
+  }, [simStartedState])
 
   return (
     <Box m="30px 20px 0px 15px">
@@ -254,20 +268,17 @@ const Dashboard = () => {
         </Typography>
       </Box>
       <Box
-      // sx=
-      // {{
-      //   border: "1px solid grey",
-      //   borderRadius: "20px",
-      //   //boxShadow: '0px 4px 30px rgba(0, 0, 0, 0.2)',
-      // }}
-      // m="80px 20px 50px 20px"
+        sx={{
+          flexGrow: 1,
+          transition: "margin 0.3s",
+          marginRight: {
+            xs: 0,
+            sm: 0,
+            md: simOpen ? `${simDrawerWidth}px` : 0,
+            lg: simOpen ? `${simDrawerWidth}px` : 0,
+          }
+        }}
       >
-        <Box display={"flex"} justifyContent={"space-between"} mb="0px">
-          <Box display="flex">
-            {/* <img width={"20px"} src="https://www.svgrepo.com/show/400173/dolphin.svg" /> */}
-            {/* <Typography fontFamily={"lexend"} fontWeight={"regular"} variant="h4" ml="5px">Sales Analytics</Typography> */}
-          </Box>
-        </Box>
         <Box
           display={"grid"}
           gridTemplateColumns={{
@@ -280,29 +291,59 @@ const Dashboard = () => {
           mb="2px"
         >
           <Box gridColumn={"span 3"} >
-            <Box display="flex">
-              <Button disabled={orderLimitReached ? true : false} sx={{ textTransform: "none" }} size="small" onClick={() => setSimStarted(simStarted ? false : true)} color="inherit" variant="outlined">
-                {simStarted ? <StopIcon /> : <PlayIcon />}
-                <Typography fontSize={"13px"} fontFamily={"lexend"} fontWeight={"light"}>Sim</Typography>
-              </Button>
-
-              <Button sx={{ textTransform: "none", ml: '10px' }} size="small" color="inherit" variant="outlined" onClick={() => setDrawerOpen(drawerOpen ? false : true)} >
-                <AssistantIcon />
-                <Typography ml="3px" fontSize={"13px"} fontFamily={"lexend"} fontWeight={"light"}>Diver</Typography>
-              </Button>
+            <Box mt="0px" display="flex">
+              <Box>
+                <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">Time Frame</Typography>
+                <ButtonGroup size="medium" aria-label="Basic button group">
+                  {simStartedState ?
+                    <Chip
+                      sx={{ 
+                        height: '37px', 
+                        border: '1px solid white',
+                        fontFamily: 'lexend',
+                        fontWeight: 'light',
+                      }}
+                      key={"timeframe-sim"}
+                      label="SIMULATION"
+                    />
+                    : Object.entries(TIMEFRAMES).map(([key, value]) => {
+                      return (
+                        <Button
+                          sx={{ height: '37px', border: '1px solid white' }}
+                          color={"inherit"}
+                          variant={selectedTimeframeKey === key ? "contained" : "outlined"}
+                          key={key}
+                          onClick={() => { handleTimeframeChange(key, value) }}
+                        >
+                          {value}
+                        </Button>)
+                    })}
+                </ButtonGroup>
+              </Box>
+              <Tooltip
+                open={tooltipOpen}
+                onOpen={() => {
+                  if (!touchTriggeredRef.current) setToolTipOpen(true);
+                }}
+                onClose={() => {
+                  if (!touchTriggeredRef.current) setToolTipOpen(false);
+                }}
+                sx={{ fontSize: "10px" }}
+                title={
+                  <Typography fontSize={"15px"}>
+                    {"Showing amounts accumulated since " + timeframeMessage || " ..."}
+                  </Typography>
+                }
+              >
+                <Box ml="10px" mt="30px">
+                  <HelpIcon onTouchStart={handleTooltipTouch} />
+                </Box>
+              </Tooltip>
             </Box>
-            <Typography fontFamily={"lexend"} fontSize={"10px"} fontWeight={"light"}>
-              {simLog}
-            </Typography>
           </Box>
           <Box
             gridColumn={"span 3"}
-            mt={{
-              xs: "10px",
-              sm: "0px",
-              md: "0px",
-              lg: "0px",
-            }}
+            mt="22px"
             pb="15px"
             display={"flex"}
             justifyContent={{
@@ -312,238 +353,309 @@ const Dashboard = () => {
               lg: "end",
             }}
           >
-            <ButtonGroup size="small" aria-label="Basic button group">
-              {Object.entries(TIMEFRAMES).map(([key, value]) => {
-                return <Button color={"inherit"} variant={selectedTimeframeKey === key ? "contained" : "outlined"} key={key} onClick={() => {
-                  handleTimeframeChange(key, value)
-                }}>{value}</Button>
-              })}
-            </ButtonGroup>
-            <Tooltip
-              open={tooltipOpen}
-              onOpen={() => {
-                if (!touchTriggeredRef.current) setToolTipOpen(true);
-              }}
-              onClose={() => {
-                if (!touchTriggeredRef.current) setToolTipOpen(false);
-              }}
-              sx={{ fontSize: "10px" }}
-              title={
-                <Typography fontSize={"15px"}>
-                  {"Showing amounts accumulated since " + timeframeMessage || " ..."}
-                </Typography>
-              }
-            >
-              <Box ml="10px" mt="5px">
-                <HelpIcon onTouchStart={handleTooltipTouch} />
+            <Button
+              // disabled={orderLimitReached ? true : false}
+              sx={{ textTransform: "none" }}
+              size="small"
+              //onClick={() => setSimStarted(simStarted ? false : true)}
+              onClick={() => setSimOpen(simOpen ? false : true)}
+              color="inherit"
+              variant="outlined">
+              {<ShoppingCart />}
+              <Typography fontSize={"13px"} fontFamily={"lexend"} fontWeight={"light"}>Simulation</Typography>
+            </Button>
+
+            <Button sx={{ textTransform: "none", ml: '10px' }} size="small" color="inherit" variant="outlined" onClick={handleDiverClick} >
+              {/* <AssistantIcon /> */}
+              <Box mt="5px" >
+                <img width="19px" src="https://raw.githubusercontent.com/basyirGH/images/main/diving-svgrepo-com.svg" />
               </Box>
-            </Tooltip>
+              <Typography ml="3px" fontSize={"13px"} fontFamily={"lexend"} fontWeight={"light"}>Diver</Typography>
+            </Button>
           </Box>
         </Box>
 
         {/* GRID & CHARTS */}
         <Box
-          mt="10px"
-          gridAutoRows="100px"
-        >
-          {/* ROW 1 */}
+          display="flex">
           <Box
-            display="grid"
-            gridTemplateColumns={{
-              xs: "repeat(3, 1fr)",
-              sm: "repeat(6, 1fr)",
-              md: "repeat(6, 1fr)",
-              lg: "repeat(12, 1fr)",
-            }}
-            //gridTemplateColumns="repeat(6, 1fr)"
-            gridAutoRows="130px"
-            gap="5px"
+            width={"100%"}
+            mt="10px"
+            gridAutoRows="100px"
           >
-            {singleAmounts.map((type) => {
-              if (type.code === METRIC_TYPES.SINGLE_AMOUNT) {
-                return type.metrics.map((metric) => {
-                  const IconComponent = ICONS[metric.code];
-                  return (
-                    <Box
-                      key={metric.code}
-                      gridColumn="span 3"
-                      gridRow="span 1"
-                      // backgroundColor={colors.primary[600]}
-                      backgroundColor='rgb(30, 30, 30)'
-                      display="flex"
-                      alignItems="center"
-                      sx={{
-                        transition: `box-shadow ${ANIM_DELAY / 1000}s ease-in-out`,
-                        boxShadow:
-                          timeframeChanged ?
-                            timeframeSelectShadow
-                            : null
-                      }}
-                    >
-                      <SingleAmountBox
-                        // In JS, 0 is falsy
-                        // Unlike ||, which treats 0 as falsy and would replace it, ?? keeps 0 but replaces undefined or null.
-                        amount={metric.aggregatedData.find(item => item.timeframe === selectedTimeframeKey)?.amount ?? undefined}
-                        label={metric.label}
-                        prefix={metric.prefix}
-                        progress={metric.aggregatedData.find(item => item.timeframe === selectedTimeframeKey)?.rateOfChange ?? undefined}
-                        icon={IconComponent ?
-                          <IconComponent
-                            sx={{
-                              color: colors.blueAccent[400],
-                              fontSize: "30px"
-                            }}
-                          />
-                          : null
-                        }
-                      />
-                    </Box>
-                  )
-                });
-              }
-              return null // fallback, in case no matching metric code found
-            }
-            )}
-          </Box>
-          {/* ROW 2 */}
-          <Box
-            display="grid"
-            gridTemplateColumns={{
-              xs: "repeat(3, 1fr)",
-              sm: "repeat(3, 1fr)",
-              md: "repeat(9, 1fr)",
-              lg: "repeat(9, 1fr)",
-            }}
-            // gridAutoRows="100px"
-            gap="5px"
-            mt="5px"
-          >
+            {/* ROW 1 */}
             <Box
-              gridColumn={{
-                xs: "span 3",  // Takes full width on small screens
-                sm: "span 3",
-                md: "span 3",
-                lg: "span 3",
+              display="grid"
+              gridTemplateColumns={{
+                xs: "repeat(3, 1fr)",
+                sm: "repeat(6, 1fr)",
+                md: "repeat(6, 1fr)",
+                lg: "repeat(12, 1fr)",
               }}
-              // backgroundColor={colors.primary[600]}
-              backgroundColor='rgb(30, 30, 30)'
-              sx={{
-                // cursor: "pointer",
-                transition: `box-shadow ${ANIM_DELAY / 1000}s ease-in-out`,
-                // "&:hover": {
-                //   backgroundColor: colors.primary[800], // Glow effect on hover
-                // },
-                boxShadow:
-                  timeframeChanged ?
-                    timeframeSelectShadow
-                    : null
-              }}
-              gridRow="span 4"
+              //gridTemplateColumns="repeat(6, 1fr)"
+              gridAutoRows="130px"
+              gap="5px"
             >
-              {socket && <DemographyPieChart socket={socket} selectedTimeframeKey={selectedTimeframeKey} selectedTimeframeValue={selectedTimeframeValue} />}
+              {singleAmounts.map((type) => {
+                if (type.code === METRIC_TYPES.SINGLE_AMOUNT) {
+                  return type.metrics.map((metric) => {
+                    const IconComponent = ICONS[metric.code];
+                    return (
+                      <Box
+                        key={metric.code}
+                        gridColumn="span 3"
+                        gridRow="span 1"
+                        // backgroundColor={colors.primary[600]}
+                        backgroundColor='rgb(30, 30, 30)'
+                        display="flex"
+                        alignItems="center"
+                        sx={{
+                          transition: `box-shadow ${ANIM_DELAY / 1000}s ease-in-out`,
+                          boxShadow:
+                            timeframeChanged ?
+                              timeframeSelectShadow
+                              : null
+                        }}
+                      >
+                        <SingleAmountBox
+                          // In JS, 0 is falsy
+                          // Unlike ||, which treats 0 as falsy and would replace it, ?? keeps 0 but replaces undefined or null.
+                          amount={metric.aggregatedData.find(item => item.timeframe === selectedTimeframeKey)?.amount ?? undefined}
+                          label={metric.label}
+                          prefix={metric.prefix}
+                          progress={metric.aggregatedData.find(item => item.timeframe === selectedTimeframeKey)?.rateOfChange ?? undefined}
+                          icon={IconComponent ?
+                            <IconComponent
+                              sx={{
+                                color: colors.blueAccent[400],
+                                fontSize: "30px"
+                              }}
+                            />
+                            : null
+                          }
+                        />
+                      </Box>
+                    )
+                  });
+                }
+                return null // fallback, in case no matching metric code found
+              }
+              )}
             </Box>
+            {/* ROW 2 */}
             <Box
-              gridColumn={{
-                xs: "span 3",  // Prevents overflow on small screens
-                sm: "span 3",
-                md: "span 6",
-                lg: "span 6",
+              display="grid"
+              gridTemplateColumns={{
+                xs: "repeat(3, 1fr)",
+                sm: "repeat(3, 1fr)",
+                md: "repeat(9, 1fr)",
+                lg: "repeat(9, 1fr)",
               }}
-              gridRow="span 4"
+              // gridAutoRows="100px"
+              gap="5px"
+              mt="5px"
             >
               <Box
-                display="grid"
-                gridTemplateColumns={{
-                  xs: "repeat(3, 1fr)",
-                  sm: "repeat(6 1fr)",
-                  md: "repeat(6, 1fr)",
-                  lg: "repeat(6, 1fr)",
+                gridColumn={{
+                  xs: "span 3",  // Takes full width on small screens
+                  sm: "span 3",
+                  md: "span 3",
+                  lg: "span 3",
                 }}
-                gridAutoRows="100px"
-                gap="5px"
-                mt="0px"
+                // backgroundColor={colors.primary[600]}
+                backgroundColor='rgb(30, 30, 30)'
+                sx={{
+                  // cursor: "pointer",
+                  transition: `box-shadow ${ANIM_DELAY / 1000}s ease-in-out`,
+                  // "&:hover": {
+                  //   backgroundColor: colors.primary[800], // Glow effect on hover
+                  // },
+                  boxShadow:
+                    timeframeChanged ?
+                      timeframeSelectShadow
+                      : null
+                }}
+                gridRow="span 4"
               >
-                {Object.values(REAL_TIME_TRENDS).map((code) => {
-                  return (
-                    <Box
-                      // backgroundColor={colors.primary[600]}
-                      backgroundColor='rgb(30, 30, 30)'
-                      key={code}
-                      gridColumn="span 3"
-                      gridRow="span 4"
-                    // backgroundColor={colors.primary[400]}
-                    >
-                      {socket && <RealTimeMetricChart socket={socket} metricCodeProp={code} />}
-                    </Box>
-                  )
-                })}
+                {socket && <DemographyPieChart socket={socket} selectedTimeframeKey={selectedTimeframeKey} selectedTimeframeValue={selectedTimeframeValue} />}
+              </Box>
+              <Box
+                gridColumn={{
+                  xs: "span 3",  // Prevents overflow on small screens
+                  sm: "span 3",
+                  md: "span 6",
+                  lg: "span 6",
+                }}
+                gridRow="span 4"
+              >
+                <Box
+                  display="grid"
+                  gridTemplateColumns={{
+                    xs: "repeat(3, 1fr)",
+                    sm: "repeat(6 1fr)",
+                    md: "repeat(6, 1fr)",
+                    lg: "repeat(6, 1fr)",
+                  }}
+                  gridAutoRows="100px"
+                  gap="5px"
+                  mt="0px"
+                >
+                  {Object.values(REAL_TIME_TRENDS).map((code) => {
+                    return (
+                      <Box
+                        // backgroundColor={colors.primary[600]}
+                        backgroundColor='rgb(30, 30, 30)'
+                        key={code}
+                        gridColumn="span 3"
+                        gridRow="span 4"
+                      // backgroundColor={colors.primary[400]}
+                      >
+                        {socket && <RealTimeMetricChart socket={socket} metricCodeProp={code} />}
+                      </Box>
+                    )
+                  })}
+                </Box>
               </Box>
             </Box>
           </Box>
         </Box>
       </Box>
+      {/* DIVER */}
       <Drawer
-        open={drawerOpen}
+        variant="persistent"
+        open={diverOpen}
         anchor="bottom"
-        slotProps={{ backdrop: { sx: { backgroundColor: "transparent" } } }}
-        onClose={() => setDrawerOpen(false)}
+        slotprops={{ backdrop: { sx: { backgroundColor: "transparent" } } }}
+        onClose={() => setDiverOpen(false)}
       >
         <Box
-          textAlign={"right"}
+          textAlign={"left"}
           p="10px 10px 0px 10px"
           backgroundColor='#121212'
           sx={{ cursor: 'pointer' }}
-          onClick={() => setDrawerOpen(false)}
+          onClick={() => setDiverOpen(false)}
         >
-          <CloseIcon />
+          <KeyboardArrowDown />
         </Box>
         <Box
           backgroundColor='#121212'
           p={{
             xs: '0px 20px 10px 20px',
-            sm: '0px 200px 10px 200px',
-            md: '0px 300px 10px 300px',
-            lg: '0px 400px 10px 400px'
+            sm: '0px 100px 10px 100px',
+            md: '0px 200px 10px 200px',
+            lg: '0px 300px 10px 300px'
           }}>
           <Box
-            height={"400px"}
+            height="auto"
+            minHeight={"400px"}
             display={"flex"}
             flexDirection={"column"}
             justifyContent={"space-between"} >
             <Box>
               <Box textAlign={"center"}>
-                <Typography fontFamily={"lexend"} fontWeight={"light"} variant="h4">
-                  Diver
-                </Typography>
-                <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
-                  Get quick answers from the depths of the database
-                </Typography>
-                <Box>
-                  <Typography mt="20px" variant="h6" fontFamily={"lexend"} fontWeight={"light"} >
-                    "How much revenue was generated on 1 Jan 2025?" <br />
-                    "Which product category was most ordered by men under 25 yesterday? "<br />
-                    "Did this year's first quarter outsell last year's?"
+                <Box justifyContent={"center"} display="flex">
+                  <Box mt="2px" mr="5px">
+                    <img width="20px" src="https://raw.githubusercontent.com/basyirGH/images/main/diving-svgrepo-com.svg" />
+                  </Box>
+                  <Typography fontFamily={"lexend"} fontWeight={"light"} variant="h4">
+                    Diver
                   </Typography>
+                  {/* <Typography mt="6px" mb="6px" pl="7px" pr="7px" sx={{ borderRadius: '0px', color: 'black', backgroundColor: 'white' }} ml="10px" fontSize="10px" fontFamily={"lexend"}> BETA</Typography> */}
+                </Box>
+                <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
+                  Get quick answers from the depths of the database.
+                </Typography>
+                {/* <Typography mt="20px" variant="h6" fontFamily={"lexend"} fontWeight={"light"} >
+                  
+                </Typography> */}
+              </Box>
+            </Box>
+            <Box mt="auto">
+              <Box
+                mb="10px"
+                display={userPrompt ? 'flex' : 'none'}
+                justifyContent={"flex-end"}>
+                <Box
+                  display={"flex"}
+                  flexDirection={"column"}
+                >
+                  <Typography
+                    p="10px 15px 10px 15px"
+                    backgroundColor={colors.grey[800]}
+                    mb="5px"
+                    fontFamily={"lexend"}
+                    fontWeight={"light"}
+                    borderRadius={"20px"}
+                    variant="h6">
+                    {userPrompt}
+                  </Typography>
+                  <Box display={"flex"} justifyContent={"flex-end"} mr="15px">
+                    <Box
+                      onClick={handleCloseUserPrompt}
+                    >
+                      <Close
+                        sx={{
+                          fontSize: '18px',
+                          cursor: 'pointer',
+                          '&:hover': { color: 'rgb(255, 73, 73)' }
+                        }}
+                      />
+                    </Box>
+                    <Box
+                      onClick={() => handleNewDiverPrompt(userPrompt)
+                      }
+                    >
+                      <Refresh
+                        sx={{
+                          fontSize: '17px',
+                          cursor: 'pointer',
+                          '&:hover': { color: 'rgb(0, 94, 217)' }
+                        }}
+                      />
+                    </Box>
+                  </Box>
                 </Box>
               </Box>
+              <Typography mb="20px" fontFamily={"lexend"} fontWeight={"light"} variant="h6">
+                {waitingDiver ? <CustomLinearProgress /> : diverMessage}
+              </Typography>
             </Box>
             <Box textAlign={"center"}>
               <TextField
+                value={promptInput}
                 fullWidth
+                // multiline
+                // maxRows={3}
+                error={promptInputError}
+                helperText={promptInputError ? "Empty input not allowed" : null}
+                onChange={(e) => setPromptInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    console.log("Enter key pressed!");
+                    // Call your function here
+                    handleNewDiverPrompt(e.target.value);
+                  }
+                }}
                 InputProps={{
                   sx: { fontSize: 15, fontFamily: 'lexend', fontWeight: 'light' } // Change font size
                 }}
                 autoFocus={true}
                 variant="outlined"
-                placeholder=""
+                placeholder="Be specific for the best results"
               />
               <Typography color={colors.grey[400]} mt="5px" fontFamily={"lexend"} fontWeight={"light"} fontSize={"11px"}>
-                Generative AI Text-to-SQL powered by Google Gemini. Not for conversations or predictions. Some queries might be error-prone.
+                Generative AI Text-to-SQL powered by Google Gemini. Not for conversations or predictions. Responses can be inaccurate.
               </Typography>
             </Box>
           </Box>
         </Box>
       </Drawer>
+      <Simulation
+        socket={socket}
+        simOpen={simOpen}
+        setSimOpen={setSimOpen}
+        simStartedState={simStartedState}
+        setSimStartedState={setSimStartedState} />
     </Box>
   );
 };
