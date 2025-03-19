@@ -19,11 +19,20 @@ RUN npm run build
 # Use an Nginx image to serve the built files
 FROM nginx:alpine
 
-# Copy built files from previous stage to Nginx's public directory
-COPY --from=build /app/build /usr/share/nginx/html
+# Set working directory for Nginx
+WORKDIR /usr/share/nginx/html
 
-# Expose port 80
-EXPOSE 80
+# Remove default Nginx static files
+RUN rm -rf ./*
+
+# Copy built files from previous stage
+COPY --from=build /app/build ./
+
+# Copy a custom Nginx configuration file
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Expose port 8080 for GCP
+EXPOSE 8080
 
 # Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
