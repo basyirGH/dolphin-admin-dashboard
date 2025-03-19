@@ -52,7 +52,7 @@ const Features = () => {
                     Diver
                 </Typography>
                 <Typography fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
-                    An AI-powered SQL query and natural language response builder for specific sales questions without coded data aggregators. <br/>
+                    An AI-powered SQL query and natural language response-builder for specific sales questions without coded data aggregators. <br/>
                 </Typography>
             </Box>
         </Box>
