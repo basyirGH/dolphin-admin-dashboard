@@ -1,6 +1,5 @@
 import { Fullscreen } from "@mui/icons-material";
 import { Box, Typography } from "@mui/material";
-import FullScreenImage from "../../utils/FullScreenImage";
 import '@fontsource/lexend/300.css';
 
 const SystemDesign = () => {
@@ -18,7 +17,7 @@ const SystemDesign = () => {
                 gap="20px"
             >
                 <Box gridColumn={"span 1"} textAlign={"center"}>
-                    <FullScreenImage src="https://raw.githubusercontent.com/basyirGH/images/main/dolphin-system-design.drawio.svg"/>
+                    <img width="100%" src="https://raw.githubusercontent.com/basyirGH/images/main/dolphin-system-design.drawio.svg"/>
                 </Box>
                 <Box display={"flex"} flexDirection={"column"} justifyContent={"center"} gridColumn={"span 1"} mb="80px">
                     <Typography mb="10px" fontFamily={"lexend"} variant="h4" fontWeight={"regular"}>

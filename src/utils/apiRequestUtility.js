@@ -1,6 +1,6 @@
 // src/utils/request.js
 
-const API_BASE_URL = 'http://localhost:8080/api/v1'; // Set your base API URL
+const API_BASE_URL = 'https://dolphin-http-700663601715.asia-southeast1.run.app/api/v1'; // Set your base API URL
 
 export const apiRequestUtility = async (token, endpoint, options = {}) => {
 

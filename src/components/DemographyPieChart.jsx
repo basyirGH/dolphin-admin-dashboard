@@ -6,6 +6,7 @@ import { ICONS } from '../constants';
 import { SOCKET_EVENTS, PIE_CHART_METRIC_CODES } from '../constants';
 import Accessibility from "highcharts/modules/accessibility";
 import NoDataToDisplay from "highcharts/modules/no-data-to-display";
+import { SentimentSatisfiedAltOutlined } from '@mui/icons-material';
 
 const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeValue }) => {
   const chartContainerRef = useRef(null);
@@ -118,10 +119,26 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
   }, []);
 
   // Populate data into chart
+  const [femaleRatio, setFemaleRatio] = useState(0);
+  const [maleRatio, setMaleRatio] = useState(0);
   useEffect(() => {
     if (chart && newData && chartContainerRef.current) {
 
       const selectedData = newData.find(data => data.timeframe === selectedTimeframeKey);
+      console.log("selectedData: " + JSON.stringify(selectedData, null, 2))
+      let femaleCount = 0;
+      let maleCount = 0;
+      let totalCount = 0;
+      selectedData.series?.forEach(demo => {
+        totalCount = totalCount + demo[1];
+        if (demo[0].includes("FEMALE")) {
+          femaleCount = femaleCount + demo[1];
+        } else if (demo[0].includes("MALE")) {
+          maleCount = maleCount + demo[1];
+        }
+      });
+      setFemaleRatio(Math.round((femaleCount / totalCount) * 100));
+      setMaleRatio(Math.round((maleCount / totalCount) * 100));
       /*
       Instead of
       data: selectedData?.series || [["No orders", 0]]
@@ -161,20 +178,6 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
             }
           ]
         });
-        // chart.addSeries({
-        //   type: 'pie', // Ensure the series remains a pie chart
-        //   name: selectedTimeframeValue,
-        //   data: selectedData?.series
-        //     ? selectedData.series.map(([demography, orders, color]) => ({
-        //         name: demography,
-        //         y: orders,
-        //         color: color
-        //       }))
-        //     : []
-        // });
-
-
-
       } catch (error) {
         console.error('Error updating chart:', error);
       }
@@ -192,7 +195,7 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
       <Box display="flex">
         <IconComponent sx={{ color: colors.blueAccent[400], fontSize: "30px", mt: "0px", mr: "10px" }} />
         <Typography
-          fontWeight={"light"} 
+          fontWeight={"light"}
           fontFamily={"lexend"}
           mb="35px"
           variant="h5"
@@ -208,10 +211,10 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
         pl: "30px",
         pr: "30px",
       }} >
-        <LegendIcon sx={{ color: colors.blueAccent[400], fontSize: "10px", mt: "5px", mr: "0px" }} />
-        <span>Male</span>
-        <LegendIcon sx={{ color: colors.pinkAccent[400], fontSize: "10px", mt: "5px", mr: "0px" }} />
-        <span>Female</span>
+        <SentimentSatisfiedAltOutlined sx={{ fontSize: '17px', mt: '1px', color: colors.blueAccent[300] }} />
+        <Typography fontWeight={"light"} fontFamily={"lexend"}>Male {maleRatio || 0}%</Typography>
+        <SentimentSatisfiedAltOutlined sx={{ fontSize: '17px', mt: '1px', color: colors.pinkAccent[300] }} />
+        <Typography fontWeight={"light"} fontFamily={"lexend"}>Female {femaleRatio || 0}%</Typography>
       </Box>
     </Box>
   );

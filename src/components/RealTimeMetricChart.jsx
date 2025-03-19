@@ -23,7 +23,7 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
     let lastUpdate;
     let zeroIntervalId; // To manage the interval for replicating zero updates
     let subMetricTimeoutId;
-    let zeroIntervalMS = 15000;
+    let zeroIntervalMS = 30000;
     let axisTitleIsSet = false;
     const chartRef = useRef();
     const subMetricNameRef = useRef();

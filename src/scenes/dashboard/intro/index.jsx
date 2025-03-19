@@ -27,9 +27,10 @@ const Intro = () => {
                     <Typography mt="40px" color="white" fontFamily={"lexend"} variant="h4" fontWeight={"regular"}>Thank You For Visiting!</Typography>
                     <Typography color="white" mt="10px" mb="5px" fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
                         My name is Mohamad Basyir.
-                        A majority of my experience is web development with Java, including five real-world projects across
+                        A majority of my experience is backend development with Java, including five real-world projects across
                         Energy and Fintech sectors spanning 1.5 years.<br/>
-                        Award-winning 2023 Bachelor of Computer Science graduate from UMT with Distinction.<br /><br />
+                        Award-winning 2023 Bachelor of Computer Science graduate from UMT with Distinction. <br/>
+                        My goal is to advance into a seasoned Senior Java Engineer while maintaining respectable proficiency on the front-end with JavaScript + React who transforms ideas into values.  <br /><br />
                         Please email me your suggestions, bugs or job openings at basyirzainuddin@gmail.com. <br />
                         You can also find me through the buttons below. <br />
                         <Box mt="10px" gap="10px" display="flex">
@@ -53,7 +54,7 @@ const Intro = () => {
                     </Typography>
                     <Box >
                         <Typography color="white" onClick={() => window.open("https://myenergystats.st.gov.my/dashboard", "_blank")} display="flex" sx={{ textDecoration: '', cursor: 'pointer' }} fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
-                            Software Engineer, Energy Comission's MyEnergyStats ©
+                            Java Software Engineer, Energy Comission's MyEnergyStats ©
                             <Box mt="3px" ml="5px" mr="20px">
                                 <img width="15px" src="https://raw.githubusercontent.com/basyirGH/images/main/new-window-svgrepo-com (1).svg" />
                             </Box>

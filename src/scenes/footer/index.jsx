@@ -6,7 +6,7 @@ const Footer = () => {
     return (
         <Box pt="80px" backgroundColor="black" textAlign={"center"} >
             <Typography fontFamily={"lexend"} variant="h6" fontWeight={"light"}>
-                © 2025 Mohamad Basyir bin Zainuddin
+                © 2025 Mohamad Basyir bin Zainuddin.
             </Typography>
 
             <Box align={"center"}>

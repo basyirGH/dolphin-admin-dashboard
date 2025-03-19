@@ -26,11 +26,17 @@ const useSocket = () => {
       return;
     } 
 
-    const conn = io("http://localhost:8081", {
+    const conn = io("https://dolphin-socket-700663601715.asia-southeast1.run.app", {
       reconnectionDelayMax: attemptDelay,
       transports: ["websocket"],
       query: { token },
     });
+
+    // const conn = io("http://localhost:8081", {
+    //   reconnectionDelayMax: attemptDelay,
+    //   transports: ["websocket"],
+    //   query: { token },
+    // });
 
     conn.on("connect", () => {
       setSocket(conn);

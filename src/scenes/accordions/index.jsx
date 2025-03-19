@@ -8,13 +8,14 @@ import { Box, useTheme } from '@mui/material';
 import { tokens } from '../../theme';
 import SystemDesign from '../systemdesign';
 import DesignPattern from '../designpattern';
+import Features from '../features/features';
 
 
 const Accordions = () => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     return (
-        <Box m="40px 20px 80px 20px">
+        <Box m="100px 20px 80px 20px">
             <Accordion sx={{backgroundColor: 'rgb(5,5,5)'}}>
                 <AccordionSummary
                     expandIcon={<ExpandMoreIcon />}
@@ -24,7 +25,7 @@ const Accordions = () => {
                     <Typography variant="h5" fontFamily={"lexend"} fontWeight={"light"}>Features</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                    
+                    <Features/>
                 </AccordionDetails>
             </Accordion>
             <Accordion sx={{backgroundColor: 'rgb(5,5,5)'}}>
@@ -33,7 +34,7 @@ const Accordions = () => {
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
-                    <Typography variant="h5" fontFamily={"lexend"} fontWeight={"light"}>Technical Overview</Typography>
+                    <Typography variant="h5" fontFamily={"lexend"} fontWeight={"light"}>Technical Overview / Developer's Notes </Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                     <SystemDesign/>

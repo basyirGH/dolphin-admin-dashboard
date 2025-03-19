@@ -1,5 +1,5 @@
-import { ChevronRight, Construction, People, PlayArrow, SentimentSatisfied, SentimentSatisfiedAlt, SentimentSatisfiedAltOutlined, ShoppingCart } from "@mui/icons-material";
-import { Box, Button, Chip, Drawer, FormControlLabel, Select, Slider, Switch, Typography, MenuItem } from "@mui/material";
+import { CachedOutlined, ChevronRight, Construction, People, PlayArrow, Refresh, SentimentSatisfied, SentimentSatisfiedAlt, SentimentSatisfiedAltOutlined, ShoppingCart } from "@mui/icons-material";
+import { Box, Button, Chip, Drawer, FormControlLabel, Select, Slider, Switch, Typography, MenuItem, Snackbar, Alert } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { useRef, useState, useEffect } from "react";
 import { ICONS, METRIC_TYPES, REAL_TIME_TRENDS, SINGLE_AMOUNT_METRIC_CODES, SOCKET_EVENTS, TIMEFRAMES } from "../../constants";
@@ -7,21 +7,18 @@ import { tokens } from "../../theme";
 import { useTheme } from "@emotion/react";
 import generateOrder from "./generateOrder";
 import { format } from 'date-fns-tz';
+import domtoimage from "dom-to-image";
 
 const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStartedState }) => {
 
-    const MAX_SEND_PER_SIM = 100;
-    const SIM_DELAY = 2000;
+    const MAX_BATCH_PER_SIM = 30;
+    const BATCH_DELAY = 2000;
     const DRAWER_WIDTH = 350;
-    const LIMIT_REACHED_LOG = "> orders limit reached, sim stopped.";
-    const ANIM_DELAY = 500;
-    const SIM_LIMIT_ITEM_NAME = "ordersMaxedOut"
-    const GENDER_RATIO_DELAY = 45000;
-    const ACTIVE_FACTORS_DELAY = 20000;
+    const GENDER_RATIO_DELAY = 30000;
+    const ACTIVE_FACTORS_DELAY = 15000;
     const OPPOSITE_GENDER_BIAS_WEIGHT = 0.1;
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
-    const orderLimitReached = localStorage.getItem(SIM_LIMIT_ITEM_NAME) === "true";
     const priceMarks = [
         { value: -50, label: "-50", weight: 50 },
         { value: -25, label: "-25", weight: 25 },
@@ -88,6 +85,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
             }),
         },
     }));
+
     const getRandomNumber = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
     const businessModels = [
         {
@@ -101,10 +99,11 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
             id: 1,
             name: "Multi-Seller Marketplace",
             categories: [
-                { id: 1, name: "Automotive/Tools", checked: false, bias: 0, chance: 90, avgPrice: 500, avgPriceIndicator: "$$", icon: <Construction /> }, // 0 for male, 1 for female
+                { id: 1, name: "Hardware/Tools", checked: false, bias: 0, chance: 90, avgPrice: 500, avgPriceIndicator: "$$" },
                 { id: 2, name: "Gaming/Electronics", checked: false, bias: 0, chance: 70, avgPrice: 700, avgPriceIndicator: "$$$" },
-                { id: 3, name: "Kids/Baby", checked: false, bias: 1, chance: 90, avgPrice: 500, avgPriceIndicator: "$$" },
-                { id: 4, name: "Pastry/Bakery", checked: false, bias: 1, chance: 70, avgPrice: 100, avgPriceIndicator: "$" },
+                { id: 3, name: "Cosmetics/Beauty", checked: false, bias: 1, chance: 90, avgPrice: 500, avgPriceIndicator: "$$" },
+                { id: 4, name: "DIY Crafts/Kitchenware", checked: false, bias: 1, chance: 70, avgPrice: 100, avgPriceIndicator: "$" }, // 0 for male, 1 for female
+
             ],
             disabled: false
         },
@@ -137,14 +136,58 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
         return format(new Date(), "yyyy-MM-dd'T'HH:mm:ssXXX", { timeZone });
     };
 
+    // Function to set an item with expiration time
+    const setWithExpiry = (key, value, ttl) => {
+        const now = new Date();
+        const item = {
+            value: value,
+            expiry: now.getTime() + ttl, // Current time + time-to-live (TTL) in milliseconds
+        };
+        localStorage.setItem(key, JSON.stringify(item));
+    };
+
+    // Function to get an item and check expiration
+    const getWithExpiry = (key) => {
+        const itemStr = localStorage.getItem(key);
+        if (!itemStr) {
+            return null;
+        }
+
+        const item = JSON.parse(itemStr);
+        const now = new Date();
+
+        // Check if expired
+        if (now.getTime() > item.expiry) {
+            localStorage.removeItem(key);
+            return null;
+        }
+
+        return item.value;
+    };
+
+    const simIDRef = useRef(null);
+    const [simID, setSimID] = useState(null);
+    const takeScreenshot = () => {
+        domtoimage.toPng(document.body)
+            .then((dataUrl) => {
+                const link = document.createElement("a");
+                link.href = dataUrl;
+                link.download = `${simIDRef.current}.png`;
+                link.click();
+            })
+            .catch((error) => {
+                console.error("Screenshot failed!", error);
+            });
+    };
+
     const simStartedRef = useRef(false);
     const simAlreadyRunningRef = useRef(false);
     const productCategoriesRef = useRef([]);
     const priceRateRef = useRef(priceMarks[2].value);
     const genderRatioTimerIdRef = useRef(null);
+    const simExpired = getWithExpiry("simExpired");
     const [priceRateState, setPriceRateState] = useState(priceRateRef.current);
     const [genderRatioTimerState, setGenderRatioTimerState] = useState(GENDER_RATIO_DELAY);
-    const [sessionID, setSessionID] = useState();
     useEffect(() => {
         console.log("simStarted: " + simStartedState)
         simStartedRef.current = simStartedState;
@@ -164,7 +207,6 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                 } else {
                     // A simulation is already running by another client.
                     setSimStartedState(false);
-                    setSimLog("Already running. Try again in 1-5 minutes, or when you notice an extended period of inactivity in the trend charts.");
                 }
             });
 
@@ -208,6 +250,12 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
         setCheckingSim(true);
         const response = await askSimStatus();
         if (response.code === "200") {
+            console.log("resp: " + JSON.stringify(response, null, 2))
+            if (response.cooldownActive) {
+                setCheckingSim(false);
+                setSimLog("Sorry, you have to wait for an hour to run another simulation due to limited traffic quota. Please try again later.");
+                return;
+            }
             let eventReceived = false;
             return new Promise((resolve) => {
                 const handleSimStatus = () => {
@@ -215,7 +263,8 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                     clearTimeout(timeoutId);
                     socket.off(SOCKET_EVENTS.BROADCAST_ANSWER_SIM_STATUS, handleSimStatus);
                     setCheckingSim(false);
-                    resolve(false); // SIM check failed
+                    setSimLog("Already running. Try again in 1-5 minutes, or when you notice an extended period of inactivity in the trend charts.");
+                    resolve(false);
                 };
                 socket.on(SOCKET_EVENTS.BROADCAST_ANSWER_SIM_STATUS, handleSimStatus);
                 const timeoutId = setTimeout(() => {
@@ -223,7 +272,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                         console.info("Timeout: No BROADCAST_ANSWER_SIM_STATUS received. Proceeding with simulation");
                         socket.off(SOCKET_EVENTS.BROADCAST_ANSWER_SIM_STATUS, handleSimStatus);
                         setCheckingSim(false);
-                        resolve(true); // SIM check passed
+                        resolve(true);
                     }
                 }, 3000);
             });
@@ -246,12 +295,15 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
 
     useEffect(() => {
         if (!socket) return;
-        const handleAskSimStatus = () => {
+        const handleAskSimStatus = (response) => {
             if (simAlreadyRunningRef.current) { handleSimStatusAnswered() }
+            console.log("ask: " + JSON.stringify(response, null, 2))
+            simIDRef.current = response.sessionID;
+            setSimID(simIDRef.current);
         };
-        socket.on(SOCKET_EVENTS.BROADCAST_ASK_SIM_STATUS, handleAskSimStatus);
+        socket.on(SOCKET_EVENTS.BROADCAST_ASK_SIM_STATUS, (response) => handleAskSimStatus(response));
         return () => {
-            socket.off(SOCKET_EVENTS.BROADCAST_ASK_SIM_STATUS, handleAskSimStatus);
+            socket.off(SOCKET_EVENTS.BROADCAST_ASK_SIM_STATUS, (response) => handleAskSimStatus(response));
         };
     }, [socket]);
 
@@ -277,60 +329,129 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
     };
 
 
-    const maxOrdersPerSendRef = useRef(100);
+    const handleTargetChange = (e) => {
+        activeSimTargetRef.current = simTargets[e.target.value]
+        setActiveSimTargetState(activeSimTargetRef.current);
+        // with modulo, if left < right, then left % right == left.
+        // targetIndex.current++;
+        // activeSimTargetRef.current = simTargets[targetIndex.current % simTargets.length]
+        // setActiveSimTargetState(activeSimTargetRef.current);
+    }
+    const simTargets = [
+        { id: 0, name: "Generate at least 200 total orders. ", level: 'Easy', criteria: (data) => data.simOrdersCount >= 200 },
+        { id: 1, name: "Reach equal proportions of customer gender in total orders. (50% : 50%)", level: 'Hard', criteria: (data) => data.maleRatio === 50 },
+        { id: 2, name: "Attract at least 10% of female customers by only selling Gaming/Electronics.", level: 'Hard', criteria: (data) => data.femaleRatio >= 10 && data.categoryId === 2 },
+        { id: 3, name: "Generate RM60K of revenue in a single batch.", level: 'Very Hard', criteria: (data) => data.batchRevenue >= 60000 },
+    ]
+    const maxOrdersPerBatchRef = useRef(100);
+    const targetIndex = useRef(0);
+    const activeSimTargetRef = useRef(simTargets[targetIndex.current]);
+    let activeTargetMet = false;
+    const [activeSimTargetState, setActiveSimTargetState] = useState(activeSimTargetRef.current);
     const [simLog, setSimLog] = useState("Ready");
-    const [simRevenue, setSimRevenue] = useState(0);
-    const [simOrdersCount, setSimOrdersCount] = useState(0);
-    // const [simCounterState, setSimCounterState] = useState(0);
     const runSim = async () => {
-        let localSimCounter = 0;
-        let localRevenue = 0;
-        let localOrdersCount = 0;
-        activeMaleRef.current = 90;
-        activeFemaleRef.current = 10;
+        let maleCount = 0;
+        let maleRatio = 0;
+        let criterias = [];
+        let femaleCount = 0;
+        let femaleRatio = 0;
+        let batchCounter = 1;
+        let simOrdersCount = 0;
+        activeMaleRef.current = 50;
+        activeFemaleRef.current = 50;
+        let statusMessage = "";
         setActiveMaleState(activeMaleRef.current);
         setActiveFemaleState(activeFemaleRef.current);
-        while (simAlreadyRunningRef.current && localSimCounter < MAX_SEND_PER_SIM) {
+        while (simAlreadyRunningRef.current && batchCounter <= MAX_BATCH_PER_SIM) {
+            let order = {};
             let orders = [];
+            let customerId = 0;
+            let categoryId = 0;
+            let batchRevenue = 0;
+            let batchOrdersCount = 0;
+            let categoryAvgPrice = 0;
+            let categoryItemPrice = 0;
             let customersActive = activeMaleRef.current !== 0 || activeFemaleRef.current !== 0;
             const currentDate = getCurrentDate();
-            const randomOrderCount = getRandomNumber(0, maxOrdersPerSendRef.current);
+            const randomOrderCount = getRandomNumber(0, maxOrdersPerBatchRef.current);
             for (let i = 0; i < randomOrderCount; i++) {
-                let customerId = getRandomCustomerId();
-                let categoryId = getBiasedCategoryId(customerId);
-                let categoryAvgPrice = productCategoriesRef.current?.[categoryId - 1]?.avgPrice;
-                let categoryItemPrice = categoryAvgPrice + (categoryAvgPrice * (priceRateRef.current / 100));
-                let order = generateOrder(customerId, categoryId, currentDate, categoryItemPrice);
-                if (categoryId !== 0) { orders.push(order); console.log("original price: " + categoryAvgPrice + ", new: " + categoryItemPrice); }
+                customerId = getRandomCustomerId();
+                categoryId = getBiasedCategoryId(customerId);
+                categoryAvgPrice = productCategoriesRef.current?.[categoryId - 1]?.avgPrice;
+                categoryItemPrice = categoryAvgPrice + (categoryAvgPrice * (priceRateRef.current / 100));
+                order = generateOrder(customerId, categoryId, currentDate, categoryItemPrice);
+                if (categoryId !== 0) { orders.push(order) }
             }
             if (orders.length < 1 || !customersActive) {
-                console.log("skipping iteration " + localSimCounter);
-                localSimCounter++;
-                setSimLog(localSimCounter + "/" + MAX_SEND_PER_SIM + "th batch sent");
-                await new Promise((resolve) => setTimeout(resolve, SIM_DELAY));
+                console.log("skipping iteration " + batchCounter);
+
+                if (!activeTargetMet) { statusMessage = "No orders made, but you are on the right track!"; }
+                setSimLog(
+                    <>
+                        {statusMessage} Batch {batchCounter} / {MAX_BATCH_PER_SIM} sent. <br />
+                    </>
+                );
+                batchCounter++;
+                await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY));
                 continue;
+            } else {
+                if (!activeTargetMet) { statusMessage = "You are doing well!"; }
             }
             const response = await sendOrdersBatch({ simulationDataList: orders });
             if (response.status === "200") {
                 // console.log(`> +1 order OK (${localSimCounter}/${MAX_SEND_PER_SIM})`);
                 orders.forEach(order => {
                     order.items.forEach(item => {
-                        localRevenue = localRevenue + (item.quantity * item.pricePerUnit);
+                        batchRevenue = batchRevenue + (item.quantity * item.pricePerUnit);
                     })
+                    if (order.customerId % 2 === 0) { maleCount++ }
+                    else { femaleCount++ }
                 });
-                localOrdersCount = localOrdersCount + orders.length;
-                localSimCounter++;
-                setSimLog(localSimCounter + "/" + MAX_SEND_PER_SIM + "th batch sent. Total revenue: " + localRevenue + ", count: " + localOrdersCount);
+                batchOrdersCount = batchOrdersCount + orders.length;
+                simOrdersCount = simOrdersCount + batchOrdersCount;
+                maleRatio = Math.round((maleCount / simOrdersCount) * 100);
+                femaleRatio = Math.round((femaleCount / simOrdersCount) * 100);
+                criterias = {
+                    maleRatio: maleRatio,
+                    femaleRatio: femaleRatio,
+                    batchRevenue: batchRevenue,
+                    batchOrdersCount: batchOrdersCount,
+                    categoryId: categoryId,
+                    simOrdersCount: simOrdersCount
+                };
+                // Both && and || serve the same purpose: ensuring isActiveTargetMet defaults to false if criteria(criterias) returns a falsy value.
+                // If only want to handle null or undefined cases, use ??. (Recommended)
+                // If want to treat all falsy values as false, use || (but be careful with 0 and "").
+
+                if (!activeTargetMet) {
+                    activeTargetMet = activeSimTargetRef.current?.criteria(criterias) ?? false;
+                }
+                if (activeTargetMet) {
+                    statusMessage = "You have succesfully reached your target! The simulation will keep running.";
+                }
+                setSimLog(
+                    <>
+                        {statusMessage} Batch {batchCounter} / {MAX_BATCH_PER_SIM} sent. <br />
+                    </>
+                );
             }
-            await new Promise((resolve) => setTimeout(resolve, SIM_DELAY));
+            batchCounter++;
+            await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY));
         }
-        setSimStartedState(false)
+        if (activeTargetMet) { setSimLog("You have succesfully reached your target! Simulation ended. ") }
+        else { setSimLog("You didn't reach your sales target, better luck next time! Simulation ended. ") }
+        await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY));
+        simStartedRef.current = false;
+        await takeScreenshot();
+        setSimStartedState(simStartedRef.current)
         activeMaleRef.current = 0;
         activeFemaleRef.current = 0;
         setActiveMaleState(activeMaleRef.current);
         setActiveFemaleState(activeFemaleRef.current);
         setActiveFactorsState([externalFactors[0]]);
-        maxOrdersPerSendRef.current = 100;
+        maxOrdersPerBatchRef.current = 100;
+        setWithExpiry("simExpired", "true", 3600000);
+        setShowAlert(true);
     }
 
     const sendOrdersBatch = (body) => {
@@ -406,47 +527,42 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
 
     const handleAdjustPrice = (e) => { setPriceRateState(e.target.value) }
 
-    const handleCategorySwitch = (id) => {
-        setActiveCategoriesState((prev) => {
-            if (!prev) return [];
-            return prev.map((cat) =>
-                cat.id === id ? { ...cat, checked: !cat.checked } : cat
-            )
-        })
-    };
-
     const externalFactors = [
         { id: 0, name: "No significant events", weight: 0, color: "#004e1b" },
         { id: 1, name: "Increasing competition", weight: 25, color: "#855151" },
         { id: 2, name: "Escalating fear of scams and frauds", weight: 25, color: "#855151" },
         { id: 3, name: "Poor customer service", weight: 25, color: "#855151" },
         { id: 4, name: "Rising tax/tariff", weight: 25, color: "#855151" },
-        { id: 5, name: "Boycott", weight: 100, color: "#810000" },
+        { id: 5, name: "Nationwide internet speed outage", weight: 100, color: "#810000" },
     ]
     const activeFactorsIntervalIdRef = useRef();
     const [activeFactorsState, setActiveFactorsState] = useState([externalFactors[0]]);
     const initExternalFactors = () => {
         activeFactorsIntervalIdRef.current = setInterval(() => {
             setActiveFactorsState([]);
-            maxOrdersPerSendRef.current = 100;
+            maxOrdersPerBatchRef.current = 100;
             let factorsLastIndex = externalFactors.length - 1;
             let random = getRandomNumber(0, factorsLastIndex);
-            if (random === 0 || random === factorsLastIndex) {
-                const newFactors = [];
-                newFactors.push(externalFactors[random]);
-                setActiveFactorsState(newFactors);
-            } else {
-                for (let i = 1; i <= random; i++) {
-                    const subRandom = getRandomNumber(i, random);
-                    setActiveFactorsState(prev => {
-                        const newFactors = [...prev];
-                        if (!newFactors.includes(externalFactors[subRandom])) {
-                            newFactors.push(externalFactors[subRandom]);
-                        }
-                        return newFactors;
-                    });
-                }
-            }
+            const newFactors = [];
+            newFactors.push(externalFactors[random]);
+            setActiveFactorsState(newFactors);
+            // Multiple factors at once
+            // if (random === 0 || random === factorsLastIndex) {
+            //     const newFactors = [];
+            //     newFactors.push(externalFactors[random]);
+            //     setActiveFactorsState(newFactors);
+            // } else {
+            //     for (let i = 1; i <= random; i++) {
+            //         const subRandom = getRandomNumber(i, random);
+            //         setActiveFactorsState(prev => {
+            //             const newFactors = [...prev];
+            //             if (!newFactors.includes(externalFactors[subRandom])) {
+            //                 newFactors.push(externalFactors[subRandom]);
+            //             }
+            //             return newFactors;
+            //         });
+            //     }
+            // }
             setFactorsTimerState(ACTIVE_FACTORS_DELAY);
         }, ACTIVE_FACTORS_DELAY)
     }
@@ -462,20 +578,29 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
     }
 
     // Track changes in active factors and price rate to influence max orders allowed.
-    const [maxOrdersCountState, setMaxOrdersCountState] = useState(maxOrdersPerSendRef.current);
+    const [maxOrdersCountState, setMaxOrdersCountState] = useState(maxOrdersPerBatchRef.current);
     useEffect(() => {
         activeFactorsState.forEach(factor => {
-            maxOrdersPerSendRef.current = maxOrdersPerSendRef.current - factor.weight;
+            maxOrdersPerBatchRef.current = maxOrdersPerBatchRef.current - factor.weight;
         });
         //console.log("max: " + maxOrdersCountRef.current);
-        setMaxOrdersCountState(maxOrdersPerSendRef.current);
+        setMaxOrdersCountState(maxOrdersPerBatchRef.current);
     }, [activeFactorsState])
 
     useEffect(() => {
         let priceWeight = priceRateState * -1;
-        maxOrdersPerSendRef.current = maxOrdersCountState + priceWeight;
-        console.log("max: " + maxOrdersPerSendRef.current);
+        maxOrdersPerBatchRef.current = maxOrdersCountState + priceWeight;
+        console.log("max: " + maxOrdersPerBatchRef.current);
     }, [maxOrdersCountState, priceRateState]);
+
+    const handleCategorySwitch = (id) => {
+        setActiveCategoriesState((prev) => {
+            if (!prev) return [];
+            return prev.map((cat) =>
+                cat.id === id ? { ...cat, checked: !cat.checked } : cat
+            )
+        })
+    };
 
     // "All-on/off" switch
     const [allCategoriesOn, setAllCategoriesOn] = useState(false);
@@ -493,13 +618,8 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
         });
     }, [allCategoriesOn])
 
-    const simTargets = [
-        { id: 0, name: "" },
-        { id: 1, name: "" },
-        { id: 2, name: "" },
-    ]
+    const [showAlert, setShowAlert] = useState(false);
 
-    const [activeSimTarget, setActiveSimTarget] = useState(simTargets[getRandomNumber(0, 2)]);
 
     return (
         <Drawer
@@ -538,7 +658,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                     lg: '0px 20px 10px 20px'
                 }}>
                 <Box
-                    mb="50px"
+                    mb="0px"
                     display={"flex"}
                     flexDirection={"column"}
                     justifyContent={"space-between"}
@@ -555,60 +675,74 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                                 {/* <Typography mt="6px" mb="6px" pl="7px" pr="7px" sx={{ borderRadius: '0px', color: 'black', backgroundColor: 'white' }} ml="10px" fontSize="10px" fontFamily={"lexend"}> BETA</Typography> */}
                             </Box>
                             <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
-                                Run a short-lived, virtual retail with random fluctuations and adjustable presets to hit the sales target.
+                                Run a virtual retail and hit the sales target.<br />
                             </Typography>
+                            {/* <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} fontSize={"12px"}>
+                                {simID ? "simID: " + simID : null}
+                            </Typography> */}
                         </Box>
-                        <Box mt="30px" >
-                            <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
-                                Active Customers
-                                <Chip
-                                    sx={{
-                                        ml: '5px',
-                                        height: '15px',
-                                        mb: '3px',
-                                        fontSize: '14px'
-                                    }}
-                                    label={`${genderRatioTimerState / 1000}s`}
-                                />
-                            </Typography>
-                            <Typography fontFamily={"lexend"} fontWeight={"light"} variant="h6">
-                                Male {activeMaleState}%, Female {activeFemaleState}%
-                            </Typography>
-                        </Box>
-                        <Box
-                            mt="20px"
-                            mb="10px"
-                        >
-                            <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
-                                External Factors
-                                <Chip
-                                    sx={{
-                                        ml: '5px',
-                                        height: '15px',
-                                        mb: '3px',
-                                        fontSize: '14px'
-                                    }}
-                                    label={`${factorsTimerState / 1000}s`}
-                                />
-                            </Typography>
-                            <Box pt="4px" >
-                                {activeFactorsState.map(factor => (
+
+                        <Box mt="20px" >
+                            <Box >
+                                <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
+                                    Random Fluctuations</Typography>
+                                <Typography fontFamily={"lexend"} fontWeight={"light"} variant="h6">
+                                    Active Customers
                                     <Chip
                                         sx={{
-                                            marginBottom: '3px',
-                                            marginRight: '3px',
-                                            height: '25px',
-                                            fontFamily: 'lexend',
-                                            fontWeight: 'regular',
-                                            fontSize: '12px',
-                                            backgroundColor: factor.color
+                                            ml: '5px',
+                                            height: '15px',
+                                            mb: '3px',
+                                            fontSize: '14px'
                                         }}
-                                        label={factor.name}></Chip>
-                                ))}
+                                        label={`${genderRatioTimerState / 1000}s`}
+                                    />
+                                </Typography>
+                                {/* <SentimentSatisfiedAltOutlined sx={{ fontSize: '17px', mt: '1px', color: colors.blueAccent[300] }} />
+                                {activeMaleState}%
+                                <SentimentSatisfiedAltOutlined sx={{ fontSize: '17px', mt: '1px', color: colors.pinkAccent[300] }} />{activeFemaleState}% */}
+                                <Box display="flex">
+                                    <SentimentSatisfiedAltOutlined sx={{ mr:'3px', fontSize: '17px', mt: '1px', color: colors.blueAccent[300] }} />
+                                    <Typography mr="30px" fontWeight={"light"} fontFamily={"lexend"}> {activeMaleState || 0}%</Typography>
+                                    <SentimentSatisfiedAltOutlined sx={{ mr:'3px', fontSize: '17px', mt: '1px', color: colors.pinkAccent[300] }} />
+                                    <Typography fontWeight={"light"} fontFamily={"lexend"}> {activeFemaleState || 0}%</Typography>
+                                </Box>
+                            </Box>
+                            <Box
+                                mt="10px"
+                                mb="10px"
+                            >
+                                <Typography fontFamily={"lexend"} fontWeight={"light"} variant="h6">
+                                    External Factors
+                                    <Chip
+                                        sx={{
+                                            ml: '5px',
+                                            height: '15px',
+                                            mb: '3px',
+                                            fontSize: '14px'
+                                        }}
+                                        label={`${factorsTimerState / 1000}s`}
+                                    />
+                                </Typography>
+                                <Box pt="4px" >
+                                    {activeFactorsState.map(factor => (
+                                        <Chip
+                                            sx={{
+                                                marginBottom: '3px',
+                                                marginRight: '3px',
+                                                height: '25px',
+                                                fontFamily: 'lexend',
+                                                fontWeight: 'regular',
+                                                fontSize: '12px',
+                                                backgroundColor: factor.color
+                                            }}
+                                            label={factor.name}></Chip>
+                                    ))}
+                                </Box>
                             </Box>
                         </Box>
-                        <hr color="#383838" />
-                        <Box mt="20px" mb="20px" >
+                        {/* <hr color="#383838" /> */}
+                        {/* <Box mt="10px">
                             <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
                                 Business Model
                             </Typography>
@@ -641,7 +775,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                                     ))}
                                 </Select>
                             </Box>
-                        </Box>
+                        </Box> */}
                         <Box mt="20px" >
                             <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
                                 Product Listing
@@ -698,9 +832,8 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                                                         fontSize: '12px',
                                                         color: 'black',
                                                         fontFamily: 'lexend',
-                                                        // backgroundColor: cat.bias ? "#ffc7e7" : colors.blueAccent[200]
                                                     }}
-                                                    label={<SentimentSatisfiedAltOutlined sx={{ fontSize: '17px', mt: '5px', color: cat.bias ? colors.pinkAccent[200] : colors.blueAccent[300] }} />}
+                                                    label={<SentimentSatisfiedAltOutlined sx={{ fontSize: '17px', mt: '5px', color: cat.bias ? colors.pinkAccent[300] : colors.blueAccent[300] }} />}
                                                 />
                                                 <Chip
                                                     // icon={<SentimentSatisfiedAlt color="black" sx={{ fontSize: '17px'}} />}
@@ -748,21 +881,71 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                                 />
                             </Box>
                         </Box>
-                        <hr color="#383838" />
-                        <Box mt="20px">
-                            <Box display="flex">
-                                <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
-                                    Target
-                                </Typography>
-                            </Box>
+                        {/* <hr color="#383838" /> */}
+                        <Box mt="10px">
                             <Box>
-                                <Typography fontFamily={"lexend"} fontWeight={"light"} variant="h6">
-                                    {activeSimTarget.name}
-                                    Reach 60k peak of revenue before the 100th batch
-                                </Typography>
+                                <Box display="flex">
+                                    <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
+                                        Target
+                                    </Typography>
+                                    <Chip
+                                        sx={{
+                                            ml: '10px',
+                                            height: '15px',
+                                            mt: '4px',
+                                            mb: '0px',
+                                            fontSize: '12px',
+                                            color: 'white',
+                                            fontWeight: 'light',
+                                            fontFamily: 'lexend',
+                                        }}
+                                        label={activeSimTargetState.level}
+                                    />
+                                </Box>
+                                <Select
+                                    disabled={simStartedState}
+                                    onChange={handleTargetChange}
+                                    value={activeSimTargetState.id}
+                                    fullWidth
+                                    renderValue={(selected) => {
+                                        const selectedTarget = simTargets.find((target) => target.id === selected);
+                                        return (
+                                            <div style={{ whiteSpace: "normal", wordBreak: "break-word" }}>
+                                                {selectedTarget ? selectedTarget.name : "Select a target"}
+                                            </div>
+                                        );
+                                    }}
+                                    sx={{
+                                        height: "auto",
+                                        fontFamily: "lexend",
+                                        fontWeight: "light",
+                                        fontSize: "14px",
+                                        "& .MuiSelect-select": {
+                                            padding: 1,
+                                        },
+                                    }}
+                                    MenuProps={{
+                                        disableScrollLock: true,
+                                    }}
+                                >
+                                    {simTargets.map(target => {
+                                        return (
+                                            <MenuItem
+                                                sx={{
+                                                    fontFamily: 'lexend',
+                                                    fontWeight: 'light',
+                                                    fontSize: '14px'
+                                                }}
+                                                key={target.id}
+                                                value={target.id}>
+                                                {target.name}
+                                            </MenuItem>
+                                        )
+                                    })}
+                                </Select>
                             </Box>
                         </Box>
-                        <Box mt="20px">
+                        <Box mt="10px">
                             <Box display="flex">
                                 <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
                                     Status
@@ -771,11 +954,20 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                             <Typography fontFamily={"lexend"} fontWeight={"light"} variant="h6">
                                 {simLog}
                             </Typography>
+                            <Typography mt="5px" color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} fontSize={"12px"}>
+                                {simID ? "simID: " + simID : null}
+                            </Typography>
+                            {/* <button onClick={() => setShowAlert(true)}>Show Alert</button> */}
+                            <Snackbar anchorOrigin={{ vertical: "bottom", horizontal: "center" }} open={showAlert} autoHideDuration={15000} onClose={() => setShowAlert(false)}>
+                                <Alert sx={{ fontFamily: 'lexend', fontSize: '15px', fontWeight: 'light', color: 'white', p: 2 }} severity="success" onClose={() => setShowAlert(false)}>
+                                    You can use your simID to ask Diver about your generated orders. A screenshot was also downloaded for your reference.
+                                </Alert>
+                            </Snackbar>
                         </Box>
                     </Box>
                     <Button
                         disabled={simStartedState ? true : false}
-                        sx={{ textTransform: "none", marginTop: '20px' }}
+                        sx={{ textTransform: "none", marginTop: '10px' }}
                         size="small"
                         onClick={() => setSimStartedState(simStartedState ? false : true)}
                         color="inherit"
@@ -789,6 +981,15 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                             {simStartedState ? checkingSim ? "Checking..." : "Running..." : "Start"}
                         </Typography>
                     </Button>
+                    {/* <Typography
+                        mt="5px" 
+                        color={colors.grey[300]}
+                        fontSize={"12px"}
+                        fontFamily={"lexend"}
+                        fontWeight={"light"}
+                    >
+                        By clicking Start, you agree that your one of your personal data is securely stored for optimized user experience. It will not be shared to third parties.
+                    </Typography> */}
                 </Box>
             </Box>
         </Drawer>
