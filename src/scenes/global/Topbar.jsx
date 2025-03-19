@@ -30,7 +30,7 @@ const Topbar = () => {
           </Typography> */}
           </Box>
           <Typography fontFamily={"lexend"} variant={"h6"} fontWeight={"light"}>
-            Simulatable Real-Time Analytics for e-Commerce with AI Text-To-SQL Tool
+            Real-Time Analytics for e-Commerce with Simulation and AI Text-To-SQL Tool
           </Typography>
         </Box>
       </Box>
@@ -52,7 +52,7 @@ const Topbar = () => {
               fontFamily={"lexend"}
               fontWeight={"light"}
             >
-              By starting the simulation, you agree that your IP address will be securely stored for an optimized user experience. It will not be shared to third parties, ever.
+              By starting the simulation, you agree that your IP address will be securely stored for a limited time so that you can get an optimized user experience. It will not be shared to third parties, ever.
             </Typography>
           </Dialog>
           {/* <Box

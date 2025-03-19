@@ -336,7 +336,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
     }
     const simTargets = [
         { id: 0, name: "Generate at least 200 total orders. ", level: 'Easy', criteria: (data) => data.simOrdersCount >= 200 },
-        { id: 1, name: "Get at least 10% of orders made by female customers by only selling Gaming/Electronics.", level: 'Easy', criteria: (data) => data.femaleRatio >= 10 && data.categoryId === 2 },
+        { id: 1, name: "Get at least 10% of orders made by female customers by only selling Gaming/Electronics.", level: 'Challenging', criteria: (data) => data.femaleRatio >= 10 && data.categoryId === 2 },
         { id: 2, name: "Reach equal ratio of customer gender in total orders. (50% : 50%)", level: 'Hard', criteria: (data) => data.maleRatio === 50 },
         { id: 3, name: "Generate RM60K of revenue in a single batch.", level: 'Very Hard', criteria: (data) => data.batchRevenue >= 60000 },
     ]
@@ -354,8 +354,8 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
         let femaleRatio = 0;
         let batchCounter = 1;
         let simOrdersCount = 0;
-        activeMaleRef.current = 50;
-        activeFemaleRef.current = 50;
+        activeMaleRef.current = 90;
+        activeFemaleRef.current = 10;
         let statusMessage = "";
         setActiveMaleState(activeMaleRef.current);
         setActiveFemaleState(activeFemaleRef.current);

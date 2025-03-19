@@ -47,7 +47,7 @@ const Features = () => {
                 </Typography>
                 <Typography fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
                     <br/>
-                    Allows orchestrating a short-lived, multi-seller e-Commerce to see the metrics in action and achieve a sales target. <br/>
+                    Allows orchestrating a short-lived session using random fluctuations and presets for testers while orders are sent in batches. It demonstrates basic examples of how the metrics can be used to understand and create relationships between data that reflect the current business climate. <br/>
                     * Fixed 60 customers online all the time. Them purchasing is determined by a probability model that uses a random number generator between 0 and a varying treshold amount. <br/>
                     * Each order only has 1 product category in its item list.<br/>
                     * Each order has random item quantities, between 1 and 3.<br/>
