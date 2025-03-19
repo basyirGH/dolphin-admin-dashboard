@@ -13,7 +13,7 @@ import { apiRequestUtility } from "../../utils/apiRequestUtility";
 import { useAuth } from "../../utils/AuthContext";
 import useSocket from "../../utils/useSocket";
 import "./style.css";
-import Simulation from './simulation';
+import Simulation from '../simulation';
 
 const Dashboard = () => {
   const theme = useTheme();
