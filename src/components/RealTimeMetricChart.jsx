@@ -39,17 +39,17 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
     // Init socket event and listener
     const initSocketLineChartEvent = () => {
         socket.emit(SOCKET_EVENTS.INIT_LINE_CHARTS, { timeOccured: Date.now() }, (ackResponse) => {
-            // console.log("Ack from server:", ackResponse); // Optional acknowledgment logging
+            // //console.log("Ack from server:", ackResponse); // Optional acknowledgment logging
         });
     };
 
     // Listen for socket updates
     socket.on(LINE_CHART_METRIC_CODES.REAL_TIME_TRENDS, (update) => {
-        //console.log("update: " + JSON.stringify(update, null, 2));
+        ////console.log("update: " + JSON.stringify(update, null, 2));
 
         // If the update contains valid data, process it and restart the zero replication
         lastUpdate = update;
-        //console.log("update: " + JSON.stringify(update, null, 2))
+        ////console.log("update: " + JSON.stringify(update, null, 2))
         addSeries(update);
         // Restart the zero-value interval to ensure continuity
         startZeroReplication();
@@ -73,7 +73,7 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
                 data: [[Date.now(), 0]], // Use the current timestamp with zero revenue
             })),
         };
-        // console.log("replicating zero...")
+        // //console.log("replicating zero...")
         addSeries(replicatedUpdate); // Add the replicated data to the chart
     };
 
@@ -85,10 +85,10 @@ const RealTimeMetricChart = memo(({ socket, metricCodeProp }) => {
 
         const line = update.aggregatedData.find((line) => line.metricCode === metricCodeProp);
 
-        //console.log("line: " + JSON.stringify(line, null, 2))
+        ////console.log("line: " + JSON.stringify(line, null, 2))
 
         if (line) {
-            // console.log("line: " + JSON.stringify(line, null, 2));
+            // //console.log("line: " + JSON.stringify(line, null, 2));
             const type = line.type;
             const seriesName = line.name;
             const newData = line.data;

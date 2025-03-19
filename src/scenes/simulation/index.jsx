@@ -8,6 +8,7 @@ import { useTheme } from "@emotion/react";
 import generateOrder from "./generateOrder";
 import { format } from 'date-fns-tz';
 import domtoimage from "dom-to-image";
+import "./style.css"
 
 const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStartedState }) => {
 
@@ -109,24 +110,20 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
         },
         {
             id: 2,
-            name: "Personal Care eCommerce (soon)",
-            categories: [
-                { id: 1, name: "Cosmetics", checked: false, bias: 1, chance: 99 },
-                { id: 2, name: "Hair Gels", checked: false, bias: 0, chance: 98 },
-                { id: 3, name: "Shaving", checked: false, bias: 0, chance: 60 },
-                { id: 4, name: "Skincare", checked: false, bias: 1, chance: 65 },
-            ],
+            name: "Dry Foods (soon)",
+            categories: [],
             disabled: true
         },
         {
             id: 3,
-            name: "Home Improvement & DIY eCommerce (soon)",
-            categories: [
-                { id: 1, name: "Plumbing", checked: false, bias: 0, chance: 97 },
-                { id: 2, name: "Gardening", checked: false, bias: 1, chance: 80 },
-                { id: 3, name: "Hand Tools", checked: false, bias: 0, chance: 90 },
-                { id: 4, name: "Crafting", checked: false, bias: 1, chance: 85 },
-            ],
+            name: "Clothing and Accessories (soon)",
+            categories: [],
+            disabled: true
+        },
+        {
+            id: 4,
+            name: "Home Improvement and Decor (soon)",
+            categories: [],
             disabled: true
         }
     ];
@@ -176,7 +173,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                 link.click();
             })
             .catch((error) => {
-                console.error("Screenshot failed!", error);
+                //console.error("Screenshot failed!", error);
             });
     };
 
@@ -189,7 +186,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
     const [priceRateState, setPriceRateState] = useState(priceRateRef.current);
     const [genderRatioTimerState, setGenderRatioTimerState] = useState(GENDER_RATIO_DELAY);
     useEffect(() => {
-        console.log("simStarted: " + simStartedState)
+        //console.log("simStarted: " + simStartedState)
         simStartedRef.current = simStartedState;
         productCategoriesRef.current = activeCategoriesState;
         priceRateRef.current = priceRateState;
@@ -213,7 +210,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
         }
         // Once simulation is stopped by MAX_SEND_PER_SIM in runSim(), clear intervals.
         else if (!simStartedState) {
-            console.log("sure?");
+            //console.log("sure?");
             setGenderRatioTimerState(GENDER_RATIO_DELAY);
             setFactorsTimerState(ACTIVE_FACTORS_DELAY);
             if (genderRatioTimerIdRef.current) {
@@ -238,7 +235,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
         // In clean-up, value is from the previous render (not the latest state/ref update)
         return () => {
             if (!simStartedRef.current) {
-                console.log("Stopping simulation...");
+                //console.log("Stopping simulation...");
                 simAlreadyRunningRef.current = false;
             }
         }
@@ -250,10 +247,10 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
         setCheckingSim(true);
         const response = await askSimStatus();
         if (response.code === "200") {
-            console.log("resp: " + JSON.stringify(response, null, 2))
+            //console.log("resp: " + JSON.stringify(response, null, 2))
             if (response.cooldownActive) {
                 setCheckingSim(false);
-                setSimLog("Sorry, you have to wait for an hour to run another simulation due to limited traffic quota. Please try again later.");
+                setSimLog("Sorry, you have to wait for an hour to run another simulation due to limited traffic. Please try again later.");
                 return;
             }
             let eventReceived = false;
@@ -269,7 +266,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                 socket.on(SOCKET_EVENTS.BROADCAST_ANSWER_SIM_STATUS, handleSimStatus);
                 const timeoutId = setTimeout(() => {
                     if (!eventReceived) {
-                        console.info("Timeout: No BROADCAST_ANSWER_SIM_STATUS received. Proceeding with simulation");
+                        //console.info("Timeout: No BROADCAST_ANSWER_SIM_STATUS received. Proceeding with simulation");
                         socket.off(SOCKET_EVENTS.BROADCAST_ANSWER_SIM_STATUS, handleSimStatus);
                         setCheckingSim(false);
                         resolve(true);
@@ -277,7 +274,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                 }, 3000);
             });
         } else {
-            console.error("An error was encountered after sending ASK_SIM_STATUS to the server");
+            //console.error("An error was encountered after sending ASK_SIM_STATUS to the server");
             return true; // Default to SIM check passed if API fails
         }
     };
@@ -297,7 +294,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
         if (!socket) return;
         const handleAskSimStatus = (response) => {
             if (simAlreadyRunningRef.current) { handleSimStatusAnswered() }
-            console.log("ask: " + JSON.stringify(response, null, 2))
+            //console.log("ask: " + JSON.stringify(response, null, 2))
             simIDRef.current = response.sessionID;
             setSimID(simIDRef.current);
         };
@@ -308,11 +305,11 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
     }, [socket]);
 
     const handleSimStatusAnswered = async () => {
-        console.log("Broadcasting this running simulation status (running)");
+        //console.log("Broadcasting this running simulation status (running)");
         try {
             await broadcastAnswerSimStatus();
         } catch (error) {
-            console.error("Failed to broadcast sim status:", error);
+            //console.error("Failed to broadcast sim status:", error);
         }
     };
 
@@ -339,8 +336,8 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
     }
     const simTargets = [
         { id: 0, name: "Generate at least 200 total orders. ", level: 'Easy', criteria: (data) => data.simOrdersCount >= 200 },
-        { id: 1, name: "Reach equal proportions of customer gender in total orders. (50% : 50%)", level: 'Hard', criteria: (data) => data.maleRatio === 50 },
-        { id: 2, name: "Attract at least 10% of female customers by only selling Gaming/Electronics.", level: 'Hard', criteria: (data) => data.femaleRatio >= 10 && data.categoryId === 2 },
+        { id: 1, name: "Get at least 10% of orders made by female customers by only selling Gaming/Electronics.", level: 'Easy', criteria: (data) => data.femaleRatio >= 10 && data.categoryId === 2 },
+        { id: 2, name: "Reach equal ratio of customer gender in total orders. (50% : 50%)", level: 'Hard', criteria: (data) => data.maleRatio === 50 },
         { id: 3, name: "Generate RM60K of revenue in a single batch.", level: 'Very Hard', criteria: (data) => data.batchRevenue >= 60000 },
     ]
     const maxOrdersPerBatchRef = useRef(100);
@@ -381,9 +378,10 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                 categoryItemPrice = categoryAvgPrice + (categoryAvgPrice * (priceRateRef.current / 100));
                 order = generateOrder(customerId, categoryId, currentDate, categoryItemPrice);
                 if (categoryId !== 0) { orders.push(order) }
+                //console.log("orders: " + JSON.stringify(orders, null, 2));
             }
             if (orders.length < 1 || !customersActive) {
-                console.log("skipping iteration " + batchCounter);
+                //console.log("skipping iteration " + batchCounter);
 
                 if (!activeTargetMet) { statusMessage = "No orders made, but you are on the right track!"; }
                 setSimLog(
@@ -399,9 +397,10 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
             }
             const response = await sendOrdersBatch({ simulationDataList: orders });
             if (response.status === "200") {
-                // console.log(`> +1 order OK (${localSimCounter}/${MAX_SEND_PER_SIM})`);
+                // //console.log(`> +1 order OK (${localSimCounter}/${MAX_SEND_PER_SIM})`);
                 orders.forEach(order => {
                     order.items.forEach(item => {
+                        categoryId = item.productId;
                         batchRevenue = batchRevenue + (item.quantity * item.pricePerUnit);
                     })
                     if (order.customerId % 2 === 0) { maleCount++ }
@@ -419,12 +418,14 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                     categoryId: categoryId,
                     simOrdersCount: simOrdersCount
                 };
+                //console.table("table: " + JSON.stringify(criterias, null, 2));
                 // Both && and || serve the same purpose: ensuring isActiveTargetMet defaults to false if criteria(criterias) returns a falsy value.
                 // If only want to handle null or undefined cases, use ??. (Recommended)
                 // If want to treat all falsy values as false, use || (but be careful with 0 and "").
 
                 if (!activeTargetMet) {
                     activeTargetMet = activeSimTargetRef.current?.criteria(criterias) ?? false;
+                    //console.log("why: " + femaleRatio + ", " + categoryId + ": " + activeTargetMet);
                 }
                 if (activeTargetMet) {
                     statusMessage = "You have succesfully reached your target! The simulation will keep running.";
@@ -493,10 +494,10 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
 
     const getRandomCustomerId = () => {
         if (getRandomNumber(0, 100) < activeMaleRef.current) {
-            // console.log("% picked male with male portion: " + activeMale)
+            // //console.log("% picked male with male portion: " + activeMale)
             return 2 * getRandomNumber(1, 30); // 2, 4, 6, ..., 60
         } else {
-            // console.log("% picked female with female portion: " + activeFemale)
+            // //console.log("% picked female with female portion: " + activeFemale)
             return 2 * getRandomNumber(0, 29) + 1; // 1, 3, 5, ..., 59
         }
     }
@@ -583,14 +584,14 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
         activeFactorsState.forEach(factor => {
             maxOrdersPerBatchRef.current = maxOrdersPerBatchRef.current - factor.weight;
         });
-        //console.log("max: " + maxOrdersCountRef.current);
+        ////console.log("max: " + maxOrdersCountRef.current);
         setMaxOrdersCountState(maxOrdersPerBatchRef.current);
     }, [activeFactorsState])
 
     useEffect(() => {
         let priceWeight = priceRateState * -1;
         maxOrdersPerBatchRef.current = maxOrdersCountState + priceWeight;
-        console.log("max: " + maxOrdersPerBatchRef.current);
+        //console.log("max: " + maxOrdersPerBatchRef.current);
     }, [maxOrdersCountState, priceRateState]);
 
     const handleCategorySwitch = (id) => {
@@ -684,11 +685,12 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
 
                         <Box mt="20px" >
                             <Box >
+                                {/* <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
+                                    Random Fluctuations</Typography> */}
                                 <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
-                                    Random Fluctuations</Typography>
-                                <Typography fontFamily={"lexend"} fontWeight={"light"} variant="h6">
                                     Active Customers
                                     <Chip
+                                        id="gender-ratio"
                                         sx={{
                                             ml: '5px',
                                             height: '15px',
@@ -702,19 +704,20 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                                 {activeMaleState}%
                                 <SentimentSatisfiedAltOutlined sx={{ fontSize: '17px', mt: '1px', color: colors.pinkAccent[300] }} />{activeFemaleState}% */}
                                 <Box display="flex">
-                                    <SentimentSatisfiedAltOutlined sx={{ mr:'3px', fontSize: '17px', mt: '1px', color: colors.blueAccent[300] }} />
-                                    <Typography mr="30px" fontWeight={"light"} fontFamily={"lexend"}> {activeMaleState || 0}%</Typography>
-                                    <SentimentSatisfiedAltOutlined sx={{ mr:'3px', fontSize: '17px', mt: '1px', color: colors.pinkAccent[300] }} />
-                                    <Typography fontWeight={"light"} fontFamily={"lexend"}> {activeFemaleState || 0}%</Typography>
+                                    <Box display="flex"><SentimentSatisfiedAltOutlined sx={{ mr: '3px', fontSize: '17px', mt: '1px', color: colors.blueAccent[300] }} />
+                                        <Typography mr="30px" fontWeight={"light"} fontFamily={"lexend"}> {activeMaleState || 0}%</Typography></Box>
+                                    <Box display="flex"><SentimentSatisfiedAltOutlined sx={{ mr: '3px', fontSize: '17px', mt: '1px', color: colors.pinkAccent[300] }} />
+                                        <Typography mr="30px" fontWeight={"light"} fontFamily={"lexend"}> {activeFemaleState || 0}%</Typography></Box>
                                 </Box>
                             </Box>
                             <Box
                                 mt="10px"
                                 mb="10px"
                             >
-                                <Typography fontFamily={"lexend"} fontWeight={"light"} variant="h6">
+                                <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
                                     External Factors
                                     <Chip
+                                        key="ext-factors"
                                         sx={{
                                             ml: '5px',
                                             height: '15px',
@@ -727,6 +730,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                                 <Box pt="4px" >
                                     {activeFactorsState.map(factor => (
                                         <Chip
+                                            key={factor.id}
                                             sx={{
                                                 marginBottom: '3px',
                                                 marginRight: '3px',
@@ -742,7 +746,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                             </Box>
                         </Box>
                         {/* <hr color="#383838" /> */}
-                        {/* <Box mt="10px">
+                        <Box mt="20px">
                             <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
                                 Business Model
                             </Typography>
@@ -775,15 +779,15 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                                     ))}
                                 </Select>
                             </Box>
-                        </Box> */}
-                        <Box mt="20px" >
-                            <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
+                        </Box>
+                        <Box key="product-listing-box" mt="10px" >
+                            <Typography key="product-listing-title" color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
                                 Product Listing
                             </Typography>
                             <Box ml="5px">
                                 <Box >
                                     <FormControlLabel
-                                        // key={cat.id}
+                                        key="active-all-categories"
                                         control={
                                             <IOSSwitch
                                                 sx={{ m: 1 }}
@@ -802,61 +806,59 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                                 </Box>
                                 {activeCategoriesState &&
                                     activeCategoriesState.map(cat => (
-                                        <Box>
-                                            <Box>
-                                                <FormControlLabel
-                                                    key={cat.id}
-                                                    control={
-                                                        <IOSSwitch
-                                                            sx={{ m: 1 }}
-                                                            checked={cat.checked}
-                                                            onChange={() => handleCategorySwitch(cat.id)}
-                                                        />}
-                                                    label={cat.name}
-                                                    sx={{
-                                                        mr: 1,
-                                                        '& .MuiFormControlLabel-label': {
-                                                            fontFamily: 'lexend',
-                                                            fontWeight: 'light',
-                                                            fontSize: '14px'
-                                                        },
-                                                    }}
-                                                />
-                                                <Chip
-                                                    // icon={<SentimentSatisfiedAlt color="black" sx={{ fontSize: '17px'}} />}
-                                                    sx={{
-                                                        pd: '3px',
-                                                        mr: '3px',
-                                                        height: '18px',
-                                                        mb: '0px',
-                                                        fontSize: '12px',
-                                                        color: 'black',
+                                        <Box key={"category-switch-box-" + cat.id}>
+                                            <FormControlLabel
+                                                key={"cat-" + cat.id}
+                                                control={
+                                                    <IOSSwitch
+                                                        sx={{ m: 1 }}
+                                                        checked={cat.checked}
+                                                        onChange={() => handleCategorySwitch(cat.id)}
+                                                    />}
+                                                label={cat.name}
+                                                sx={{
+                                                    mr: 1,
+                                                    '& .MuiFormControlLabel-label': {
                                                         fontFamily: 'lexend',
-                                                    }}
-                                                    label={<SentimentSatisfiedAltOutlined sx={{ fontSize: '17px', mt: '5px', color: cat.bias ? colors.pinkAccent[300] : colors.blueAccent[300] }} />}
-                                                />
-                                                <Chip
-                                                    // icon={<SentimentSatisfiedAlt color="black" sx={{ fontSize: '17px'}} />}
-                                                    sx={{
-                                                        mt: '0px',
-                                                        height: '18px',
-                                                        mb: '0px',
-                                                        fontSize: '13px',
-                                                        color: 'white',
                                                         fontWeight: 'light',
-                                                        fontFamily: 'lexend',
-                                                        // backgroundColor: '#e8e8e8'
-                                                    }}
-                                                    label={`${cat.avgPriceIndicator}`}
-                                                />
-                                            </Box>
-
+                                                        fontSize: '14px'
+                                                    },
+                                                }}
+                                            />
+                                            <Chip
+                                                key={"gender-bias"}
+                                                sx={{
+                                                    pd: '3px',
+                                                    mr: '3px',
+                                                    height: '18px',
+                                                    mb: '0px',
+                                                    fontSize: '12px',
+                                                    color: 'black',
+                                                    fontFamily: 'lexend',
+                                                }}
+                                                label={<SentimentSatisfiedAltOutlined sx={{ fontSize: '17px', mt: '5px', color: cat.bias ? colors.pinkAccent[300] : colors.blueAccent[300] }} />}
+                                            />
+                                            <Chip
+                                                // icon={<SentimentSatisfiedAlt color="black" sx={{ fontSize: '17px'}} />}
+                                                key="avg-price"
+                                                sx={{
+                                                    mt: '0px',
+                                                    height: '18px',
+                                                    mb: '0px',
+                                                    fontSize: '13px',
+                                                    color: 'white',
+                                                    fontWeight: 'light',
+                                                    fontFamily: 'lexend',
+                                                    // backgroundColor: '#e8e8e8'
+                                                }}
+                                                label={`${cat.avgPriceIndicator}`}
+                                            />
                                         </Box>
                                     ))
                                 }
                             </Box>
                         </Box>
-                        <Box mt="20px">
+                        <Box mt="10px">
                             <Box display="flex">
                                 <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
                                     Prices (%)
@@ -889,6 +891,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                                         Target
                                     </Typography>
                                     <Chip
+                                        key="sim-target"
                                         sx={{
                                             ml: '10px',
                                             height: '15px',

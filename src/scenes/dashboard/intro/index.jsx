@@ -29,10 +29,11 @@ const Intro = () => {
                         My name is Mohamad Basyir.
                         A majority of my experience is backend development with Java, including five real-world projects across
                         Energy and Fintech sectors spanning 1.5 years.<br/>
-                        Award-winning 2023 Bachelor of Computer Science graduate from UMT with Distinction. <br/>
-                        My goal is to advance into a seasoned Senior Java Engineer while maintaining respectable proficiency on the front-end with JavaScript + React who transforms ideas into values.  <br /><br />
+                        {/* I've just gotten familiar with React in the past 10 months, and I am actively leveraging it as a chance to enhance my JavaScript skills as well. <br/>
+                        My goal is to advance into a seasoned Senior Java Engineer while maintaining respectable proficiency on the front-end who transforms ideas into values.  <br /><br /> */}
+                        Award-winning 2023 Bachelor of Computer Science graduate from University of Malaysia Terengganu with Distinction. <br/>
                         Please email me your suggestions, bugs or job openings at basyirzainuddin@gmail.com. <br />
-                        You can also find me through the buttons below. <br />
+                        You can also find me on LinkedIn. <br />
                         <Box mt="10px" gap="10px" display="flex">
 
                             <Box
@@ -41,12 +42,12 @@ const Intro = () => {
                                 <img width="30px" src="https://raw.githubusercontent.com/basyirGH/images/main/linkedin-svgrepo-com.svg" />
 
                             </Box>
-                            <Box
+                            {/* <Box
                                 onClick={() => window.open("https://github.com/basyirGH?tab=repositories", "_blank")} display="flex" sx={{ textDecoration: 'underline', cursor: 'pointer' }} fontFamily={"lexend"} variant="h5" fontWeight={"regular"}
                             >
                                 <img width="30px" src="https://raw.githubusercontent.com/basyirGH/images/main/github-svgrepo-com (3).svg" />
 
-                            </Box>
+                            </Box> */}
                         </Box>
                     </Typography>
                     <Typography color="white" mt="20px" mb="10px" fontFamily={"lexend"} variant="h5" fontWeight={"light"}>

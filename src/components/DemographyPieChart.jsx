@@ -20,13 +20,13 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
   // Init socket event and listener
   const initSocketPieEvent = () => {
     socket.emit(SOCKET_EVENTS.INIT_PIE_CHARTS, {}, (ackResponse) => {
-      //console.log("Ack from server:", ackResponse); // Optional acknowledgment logging
+      ////console.log("Ack from server:", ackResponse); // Optional acknowledgment logging
     });
   }
 
   socket.on(PIE_CHART_METRIC_CODES.TOTAL_ORDERS_BY_DEMOGRAPHY, (update) => {
     setNewData(update?.aggregatedData || []);
-    //console.log("update: " + JSON.stringify(update, null, 2)) 
+    ////console.log("update: " + JSON.stringify(update, null, 2)) 
     chartLabelRef.current.textContent = update.label;
   });
 
@@ -125,7 +125,7 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
     if (chart && newData && chartContainerRef.current) {
 
       const selectedData = newData.find(data => data.timeframe === selectedTimeframeKey);
-      console.log("selectedData: " + JSON.stringify(selectedData, null, 2))
+      //console.log("selectedData: " + JSON.stringify(selectedData, null, 2))
       let femaleCount = 0;
       let maleCount = 0;
       let totalCount = 0;
@@ -151,10 +151,10 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
       If Highcharts modifies series, it might be modifying newData.series, affecting future timeframe switches.
       The deep copy (JSON.parse(JSON.stringify(selectedData.series))) ensures chart.update() works on an independent object.
 
-      console.log("handleTimeframeChange key: " + selectedTimeframeKey)
-      console.log("handleTimeframeChange value: " + selectedTimeframeValue)
-      console.log("newData: " + JSON.stringify(newData, null, 2));
-      console.log("selectedData with " + selectedTimeframeKey + "\n" + JSON.stringify(selectedData, null, 2))
+      //console.log("handleTimeframeChange key: " + selectedTimeframeKey)
+      //console.log("handleTimeframeChange value: " + selectedTimeframeValue)
+      //console.log("newData: " + JSON.stringify(newData, null, 2));
+      //console.log("selectedData with " + selectedTimeframeKey + "\n" + JSON.stringify(selectedData, null, 2))
 
       */
 
@@ -179,10 +179,10 @@ const DemographyPieChart = ({ socket, selectedTimeframeKey, selectedTimeframeVal
           ]
         });
       } catch (error) {
-        console.error('Error updating chart:', error);
+        //console.error('Error updating chart:', error);
       }
     }
-    //console.log("newdata: " + JSON.stringify(newData, null, 2))
+    ////console.log("newdata: " + JSON.stringify(newData, null, 2))
   }, [newData, selectedTimeframeKey, chart]);
 
   const IconComponent = ICONS["DEMOGRAPHY"];

@@ -7,7 +7,7 @@ const getCurrentDate = (timeZone = 'Asia/Kuala_Lumpur') => {
 };
 
 const generateOrder = (customerId, productId, orderDate, pricePerUnit) => {
-  console.log("+1 new order, date: " + orderDate)
+  //console.log("+1 new order, date: " + orderDate)
   return {
     customerId: customerId,
     orderDate: orderDate,

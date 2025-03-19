@@ -10,7 +10,8 @@ const Features = () => {
                     Dashboard
                 </Typography>
                 <Typography fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
-                    This is a collection of seven widely relevant business metrics that entail live sales data as they happen—no refresh is required for updates. Pages like this dashboard is usually part of a larger e-Commerce system, but due to its current stage, Dolphin is made for easier public access, quicker deployment and straighforward testing. 
+                    <br/>
+                    This is a collection of seven widely used business metrics that entail live sales data as they happen—no refresh is required. Pages like this dashboard is usually part of a larger e-Commerce system, but due to its current stage, Dolphin is made for easier public access, quicker deployment and straighforward testing. 
                 </Typography>
             </Box>
             <Box mb="30px">
@@ -18,6 +19,7 @@ const Features = () => {
                     Time Frame
                 </Typography>
                 <Typography fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
+                    <br/>
                     Allows a dynamic selection of fixed intervals that affect 5 out of 7 metrics. <br/>
                 </Typography>
             </Box>
@@ -36,7 +38,7 @@ const Features = () => {
                     <br/><br/>
                     Help detecting immediate feedback after sales strategies: <br/>
                     6. Revenue Trend (Last Few Minutes) - Revenue generated at the current second in a 30 minutes window.<br/>
-                    6. Orders Trend (Last Few Minutes) - Number of orders generated at the current second in a 30 minutes window.
+                    7. Orders Trend (Last Few Minutes) - Number of orders generated at the current second in a 30 minutes window.
                 </Typography>
             </Box>
             <Box mb="30px">
@@ -44,7 +46,11 @@ const Features = () => {
                     Simulation
                 </Typography>
                 <Typography fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
-                    Allows orchestrating a short-lived, multi-seller business to see the metrics in action and achieve a sales target. <br/>
+                    <br/>
+                    Allows orchestrating a short-lived, multi-seller e-Commerce to see the metrics in action and achieve a sales target. <br/>
+                    * Fixed 60 customers online all the time. Them purchasing is determined by a probability model that uses a random number generator between 0 and a varying treshold amount. <br/>
+                    * Each order only has 1 product category in its item list.<br/>
+                    * Each order has random item quantities, between 1 and 3.<br/>
                 </Typography>
             </Box>
             <Box mb="30px">
@@ -52,7 +58,8 @@ const Features = () => {
                     Diver
                 </Typography>
                 <Typography fontFamily={"lexend"} variant="h5" fontWeight={"light"}>
-                    An AI-powered SQL query and natural language response-builder for specific sales questions without coded data aggregators. <br/>
+                    <br/>
+                    An AI-powered, on-demand data finder, aggregator and analyzer that uncover facts that the metrics may not show. <br/>
                 </Typography>
             </Box>
         </Box>

@@ -70,7 +70,7 @@ const ResponsiveMenu = () => {
           fontFamily={"lexend"}
           fontWeight={"light"}
         >
-          By starting the simulation, you agree that your one of your personal data is securely stored for preventing excessive usage. It will not be shared to third parties.
+          By starting the simulation, you agree that your IP address will be securely stored for an optimized user experience. It will not be shared to third parties, ever.
         </Typography>
       </Dialog>
     </>
