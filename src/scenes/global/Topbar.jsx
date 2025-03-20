@@ -30,7 +30,10 @@ const Topbar = () => {
           </Typography> */}
           </Box>
           <Typography fontFamily={"lexend"} variant={"h5"} fontWeight={"light"}>
-            Real-Time Analytics Dashboard for e-Commerce Business Owners <br/>  + Simulation Panel and AI Data Aggregator 
+            Real-Time Analytics Dashboard for e-Commerce
+          </Typography>
+          <Typography fontFamily={"lexend"} variant={"h6"} fontWeight={"light"}>
+            With Simulation Panel and AI Data Aggregator 
           </Typography>
         </Box>
       </Box>

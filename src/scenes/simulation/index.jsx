@@ -8,9 +8,9 @@ import { useTheme } from "@emotion/react";
 import generateOrder from "./generateOrder";
 import { format } from 'date-fns-tz';
 import domtoimage from "dom-to-image";
-import "./style.css"
+import useSocket from "../../utils/useSocket";
 
-const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStartedState }) => {
+const Simulation = ({ simOpen, setSimOpen, simStartedState, setSimStartedState }) => {
 
     const MAX_BATCH_PER_SIM = 30;
     const BATCH_DELAY = 2000;
@@ -20,6 +20,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
     const OPPOSITE_GENDER_BIAS_WEIGHT = 0.1;
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
+    const { socket } = useSocket();
     const priceMarks = [
         { value: -50, label: "-50", weight: 50 },
         { value: -25, label: "-25", weight: 25 },
@@ -192,6 +193,9 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
         priceRateRef.current = priceRateState;
         // Run simulation upon user action, only if one is not already running.
         if (simStartedState && !simAlreadyRunningRef.current) {
+            // Get new session ID
+            simIDRef.current = crypto.randomUUID();
+            setSimID(simIDRef.current);
             // Check if a simulation is already ran by other clients. Must use .then for Promise
             checkSimStatus().then((isSimOK) => {
                 if (isSimOK) {
@@ -250,7 +254,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
             //console.log("resp: " + JSON.stringify(response, null, 2))
             if (response.cooldownActive) {
                 setCheckingSim(false);
-                setSimLog("Sorry, you have to wait for an hour to run another simulation due to limited traffic. Please try again later.");
+                setSimLog("Sorry, you have reached your simulation run limit. Please try again in a few hours.");
                 return;
             }
             let eventReceived = false;
@@ -280,7 +284,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
     };
     const askSimStatus = () => {
         return new Promise((resolve, reject) => {
-            socket.emit(SOCKET_EVENTS.ASK_SIM_STATUS, {}, (ackResponse) => {
+            socket.emit(SOCKET_EVENTS.ASK_SIM_STATUS, { sessionID: null, status: null, date: getCurrentDate() }, (ackResponse) => {
                 if (ackResponse.error) {
                     reject(ackResponse.error);
                 } else {
@@ -295,12 +299,12 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
         const handleAskSimStatus = (response) => {
             if (simAlreadyRunningRef.current) { handleSimStatusAnswered() }
             //console.log("ask: " + JSON.stringify(response, null, 2))
-            simIDRef.current = response.sessionID;
-            setSimID(simIDRef.current);
+            // simIDRef.current = response.sessionID;
+            // setSimID(simIDRef.current);
         };
         socket.on(SOCKET_EVENTS.BROADCAST_ASK_SIM_STATUS, (response) => handleAskSimStatus(response));
         return () => {
-            socket.off(SOCKET_EVENTS.BROADCAST_ASK_SIM_STATUS, (response) => handleAskSimStatus(response));
+            socket.off(SOCKET_EVENTS.BROADCAST_ASK_SIM_STATUS, handleAskSimStatus);
         };
     }, [socket]);
 
@@ -381,9 +385,15 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                 //console.log("orders: " + JSON.stringify(orders, null, 2));
             }
             if (orders.length < 1 || !customersActive) {
-                //console.log("skipping iteration " + batchCounter);
-
-                if (!activeTargetMet) { statusMessage = "No orders made, but you are on the right track!"; }
+                let activeProducts = productCategoriesRef.current.filter(p => p.checked);
+                // console.log("produ" + JSON.stringify(activeProducts, null, 2));
+                if (!activeTargetMet) {
+                    if (activeProducts < 1) {
+                        statusMessage = "No orders made right now because no products are active.";
+                    } else {
+                        statusMessage = "No orders made right now, try lowering prices or just wait until things get better.";
+                    }
+                }
                 setSimLog(
                     <>
                         {statusMessage} Batch {batchCounter} / {MAX_BATCH_PER_SIM} sent. <br />
@@ -395,7 +405,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
             } else {
                 if (!activeTargetMet) { statusMessage = "You are doing well!"; }
             }
-            const response = await sendOrdersBatch({ simulationDataList: orders });
+            const response = await sendOrdersBatch({simId: simIDRef.current, simulationDataList: orders });
             if (response.status === "200") {
                 // //console.log(`> +1 order OK (${localSimCounter}/${MAX_SEND_PER_SIM})`);
                 orders.forEach(order => {
@@ -746,7 +756,7 @@ const Simulation = ({ socket, simOpen, setSimOpen, simStartedState, setSimStarte
                             </Box>
                         </Box>
                         {/* <hr color="#383838" /> */}
-                        <Box mt="20px">
+                        <Box mt="10px">
                             <Typography color={colors.grey[300]} fontFamily={"lexend"} fontWeight={"light"} variant="h6">
                                 Business Model
                             </Typography>

@@ -17,6 +17,7 @@ const useSocket = () => {
   const [message, setMessage] = useState("");
   const [attemptCount, setAttemptCount] = useState(0);
   const attemptDelay = 1000;
+  const SOCKET_URL = "https://dolphin-socket-700663601715.asia-southeast1.run.app"
 
   useEffect(() => {
     if (!isAuthenticated && firstAttemptDone) {
@@ -24,9 +25,9 @@ const useSocket = () => {
       setMessage("(auth failure).");
       setAttemptCount(0);
       return;
-    } 
+    }
 
-    const conn = io("https://dolphin-socket-700663601715.asia-southeast1.run.app", {
+    const conn = io(SOCKET_URL, {
       reconnectionDelayMax: attemptDelay,
       transports: ["websocket"],
       query: { token },
@@ -46,7 +47,7 @@ const useSocket = () => {
 
     conn.on("connect_error", (error) => {
       setSocket(null);
-      setMessage("(connection failure: "+error+"). retrying...");
+      setMessage("(connection failure: " + error + "). retrying...");
       setAttemptCount((prevCount) => prevCount + 1);
     });
 
