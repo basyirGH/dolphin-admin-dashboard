@@ -1,7 +1,7 @@
 
 import '@fontsource/lexend/500.css';
 import { ChevronRight, Close, KeyboardArrowDown, Refresh, ShoppingCart } from "@mui/icons-material";
-import { Box, Button, ButtonGroup, Chip, Drawer, FormControlLabel, LinearProgress, Slider, Switch, TextField, Tooltip, Typography, useTheme } from "@mui/material";
+import { Box, Button, ButtonGroup, Chip, Drawer, FormControlLabel, LinearProgress, Slider, Switch, TextField, Tooltip, Typography, useTheme, Skeleton } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { useEffect, useRef, useState } from "react";
 import DemographyPieChart from "../../components/DemographyPieChart";
@@ -255,6 +255,8 @@ const Dashboard = () => {
     }
   }, [simStartedState])
 
+  const [isSingleAmountsLoading, setIsSingleAmountsLoading] = useState(false);
+
   return (
     <Box m="30px 20px 0px 15px">
       <Box mb="20px">
@@ -295,8 +297,8 @@ const Dashboard = () => {
                 <ButtonGroup size="medium" aria-label="Basic button group">
                   {simStartedState ?
                     <Chip
-                      sx={{ 
-                        height: '37px', 
+                      sx={{
+                        height: '37px',
                         border: '1px solid white',
                         fontFamily: 'lexend',
                         fontWeight: 'light',
@@ -395,7 +397,8 @@ const Dashboard = () => {
             >
               {singleAmounts.map((type) => {
                 if (type.code === METRIC_TYPES.SINGLE_AMOUNT) {
-                  return type.metrics.map((metric) => {
+
+                  return type.metrics.length === 4 ? type.metrics.map((metric) => {
                     const IconComponent = ICONS[metric.code];
                     return (
                       <Box
@@ -433,7 +436,21 @@ const Dashboard = () => {
                         />
                       </Box>
                     )
-                  });
+                  })
+                    :
+                    Array.from({ length: 4 }).map((_, index) => (
+                      <Box
+                        key={index}
+                        gridColumn="span 3"
+                        gridRow="span 1"
+                        backgroundColor="rgb(30, 30, 30)"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <Skeleton variant="rectangular" width="100%" height="100%" />
+                      </Box>
+                    ))
                 }
                 return null // fallback, in case no matching metric code found
               }
@@ -474,7 +491,11 @@ const Dashboard = () => {
                 }}
                 gridRow="span 4"
               >
-                {socket && <DemographyPieChart socket={socket} selectedTimeframeKey={selectedTimeframeKey} selectedTimeframeValue={selectedTimeframeValue} />}
+                {socket ?
+                  <DemographyPieChart socket={socket} selectedTimeframeKey={selectedTimeframeKey} selectedTimeframeValue={selectedTimeframeValue} />
+                  :
+                  <Skeleton variant="rectangular" width="100%" height="100%" />
+                }
               </Box>
               <Box
                 gridColumn={{
@@ -507,7 +528,10 @@ const Dashboard = () => {
                         gridRow="span 4"
                       // backgroundColor={colors.primary[400]}
                       >
-                        {socket && <RealTimeMetricChart socket={socket} metricCodeProp={code} />}
+                        {socket ? <RealTimeMetricChart socket={socket} metricCodeProp={code} />
+                        :
+                        <Skeleton variant="rectangular" width="100%" height="100%" />
+                        }
                       </Box>
                     )
                   })}
