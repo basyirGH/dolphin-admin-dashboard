@@ -259,7 +259,7 @@ const Dashboard = () => {
 
   return (
     <Box m="30px 20px 0px 15px">
-      <Snackbar sx={{backgroundColor: '"#ffe000'}} anchorOrigin={{ vertical: "bottom", horizontal: "center" }} open={socket} >
+      <Snackbar sx={{backgroundColor: '"#ffe000'}} anchorOrigin={{ vertical: "bottom", horizontal: "center" }} open={!socket} >
         <Alert sx={{ backgroundColor: '#ffe000', fontFamily: 'lexend', fontSize: '15px', fontWeight: 'light', color: 'black', p: 2 }} severity="info">
           Please allow 8-12 seconds for the server to recover from a deep sleep. In the meantime, explore the notes below and thanks for your patience!
         </Alert>
