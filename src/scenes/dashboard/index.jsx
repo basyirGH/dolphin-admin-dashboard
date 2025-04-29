@@ -1,7 +1,7 @@
 
 import '@fontsource/lexend/500.css';
 import { ChevronRight, Close, KeyboardArrowDown, Refresh, ShoppingCart } from "@mui/icons-material";
-import { Box, Button, ButtonGroup, Chip, Drawer, FormControlLabel, LinearProgress, Slider, Switch, TextField, Tooltip, Typography, useTheme, Skeleton } from "@mui/material";
+import { Box, Button, ButtonGroup, Chip, Drawer, Snackbar, LinearProgress, Alert, Switch, TextField, Tooltip, Typography, useTheme, Skeleton } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { useEffect, useRef, useState } from "react";
 import DemographyPieChart from "../../components/DemographyPieChart";
@@ -259,6 +259,11 @@ const Dashboard = () => {
 
   return (
     <Box m="30px 20px 0px 15px">
+      <Snackbar sx={{backgroundColor: '"#ffe000'}} anchorOrigin={{ vertical: "bottom", horizontal: "center" }} open={socket} >
+        <Alert sx={{ backgroundColor: '#ffe000', fontFamily: 'lexend', fontSize: '15px', fontWeight: 'light', color: 'black', p: 2 }} severity="info">
+          Please allow 8-12 seconds for the server to recover from a deep sleep. In the meantime, explore the notes below and thanks for your patience!
+        </Alert>
+      </Snackbar>
       <Box mb="20px">
         <Typography fontFamily={"lexend"} variant="h5" fontWeight={"regular"}>
           {/* Recently, I've been upskilling and learning with a project. The end result is a live analytics dashboard for businesses and e-commerce.<br />  */}
@@ -529,8 +534,8 @@ const Dashboard = () => {
                       // backgroundColor={colors.primary[400]}
                       >
                         {socket ? <RealTimeMetricChart socket={socket} metricCodeProp={code} />
-                        :
-                        <Skeleton variant="rectangular" width="100%" height="100%" />
+                          :
+                          <Skeleton variant="rectangular" width="100%" height="100%" />
                         }
                       </Box>
                     )
